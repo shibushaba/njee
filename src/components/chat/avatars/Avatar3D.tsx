@@ -24,8 +24,9 @@ export function Avatar3D({ variant, isTyping = false, className, size = 'md' }: 
     )
   }, [variant, isTyping])
 
-  const dim = size === 'sm' ? 40 : 56
-  const zoom = size === 'sm' ? 148 : 118
+  const dim = size === 'sm' ? 44 : 56
+  /** Orthographic zoom: lower = wider view (more zoomed out). */
+  const zoom = size === 'sm' ? 68 : 82
 
   return (
     <div
