@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Fredoka', ui-sans-serif, system-ui, sans-serif;
+  --color-nje-bg: #f5d9a6;
+  --color-nje-border: #5a2e1e;
+  --color-nje-pink: #e8c6c8;
+  --color-nje-yellow: #f2c14e;
+  --color-nje-mint: #7fd1b9;
+  --color-nje-surface: #fff6e8;
+  --color-nje-muted: rgba(90, 46, 30, 0.72);
+  --color-nje-whisper: rgba(90, 46, 30, 0.55);
+  --shadow-nje-flat: 4px 4px 0 0 rgba(90, 46, 30, 0.22);
+  --shadow-nje-flat-sm: 3px 3px 0 0 rgba(90, 46, 30, 0.18);
+  --spacing-gutter: 1rem;
+  --spacing-gutter-sm: 1.125rem;
+  --spacing-gutter-md: 1.5rem;
+  --spacing-gutter-lg: 2rem;
+  --spacing-stack: 0.875rem;
+  --spacing-stack-md: 1.25rem;
+  --spacing-stack-lg: 1.75rem;
+  --spacing-stack-xl: 2.25rem;
+}
+
+html {
+  @apply antialiased;
+}
+
+body {
+  @apply m-0 min-h-dvh bg-nje-bg font-sans text-nje-border;
+}
+
+#root {
+  @apply min-h-dvh;
+}
