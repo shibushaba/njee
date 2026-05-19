@@ -4,7 +4,7 @@
  * or other backend if you need server-to-server or offline access.
  */
 export const GOOGLE_DRIVE_SCOPES = [
-  /** Full Drive scope: reliable for shared folders + partner uploads. Narrow in production if you pass Google verification. */
+  /** Full Drive scope: reliable for shared folders and uploads from multiple accounts. Narrow in production if you pass Google verification. */
   'https://www.googleapis.com/auth/drive',
 ] as const
 

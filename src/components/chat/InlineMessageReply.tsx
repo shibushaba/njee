@@ -2,7 +2,7 @@ import { cn } from '../../lib/cn'
 
 type InlineMessageReplyProps = {
   snippet: string
-  /** "You" or partner name */
+  /** "You" or the other person's display name */
   authorLabel: string
   className?: string
 }

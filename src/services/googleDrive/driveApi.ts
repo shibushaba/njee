@@ -76,7 +76,7 @@ export async function driveFindChildFolder(
   return { id, error: null }
 }
 
-/** Anyone with the link can view (no Google sign-in for your partner in the browser). */
+/** Anyone with the link can view (no Google sign-in in the browser to watch). */
 export async function driveAddAnyoneReaderPermission(
   accessToken: string,
   fileId: string,

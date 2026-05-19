@@ -16,4 +16,4 @@ Recommended next step for production: an Edge Function that:
 2. Uses a service account or stored refresh token with `googleapis`.
 3. Returns file ids / links to the client.
 
-Until then, the SPA uploads directly with the user’s OAuth access token (fine for a private two-person app if both trust the client).
+Until then, the SPA uploads directly with the user’s OAuth access token (fine for a private app if everyone with access trusts the client).

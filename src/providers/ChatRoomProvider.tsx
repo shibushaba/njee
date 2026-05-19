@@ -156,6 +156,10 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
             )
           })
 
+          if (row.sender_id === peerId) {
+            setPeerTyping(false)
+          }
+
           if (row.receiver_id === currentId) {
             void markMessagesSeen(currentId, peerId)
           }
@@ -303,7 +307,7 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
       if (share.error) {
         setSending(false)
         return {
-          error: `Uploaded, but sharing failed (partner needs link access): ${share.error}`,
+          error: `Uploaded, but sharing failed (link access required for playback): ${share.error}`,
         }
       }
 

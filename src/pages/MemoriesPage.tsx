@@ -49,7 +49,7 @@ export function MemoriesPage() {
     [messages],
   )
 
-  /** When you're signed into Google, delete Drive files you uploaded that are already locked (partner may have no Google session). */
+  /** When you're signed into Google, delete Drive files you uploaded that are already locked (viewer may have no Google session). */
   useEffect(() => {
     if (!peerReady || !currentId || !gd.accessToken) return
     const mine = messages.filter(
@@ -120,7 +120,7 @@ export function MemoriesPage() {
         description={
           peerUsername
             ? `Photos and videos with ${peerUsername}. Either of you can upload from your own device; both can open and play without signing in to Google.`
-            : 'Photos and videos with your partner. Either of you can upload from your own device; both can open and play without signing in to Google.'
+            : 'Photos and videos shared here. Either of you can upload from your own device; both can open and play without signing in to Google.'
         }
       />
 
@@ -136,9 +136,9 @@ export function MemoriesPage() {
       {!loading && !error && !peerReady ? (
         <div className="shrink-0 pb-2 pt-1">
           <NjeCard tone="yellow" padding="md" className="shadow-[0_2px_0_0_rgba(90,46,30,0.05)]">
-            <p className="text-sm font-semibold text-nje-border">No peer profile found</p>
+            <p className="text-sm font-semibold text-nje-border">No other profile found</p>
             <p className="mt-1 text-xs leading-relaxed text-nje-muted">
-              Set up profiles in Supabase (see repo README) before sharing memories.
+              Set up profiles in Supabase for each account so the app can resolve the other user (see repo README).
             </p>
           </NjeCard>
         </div>

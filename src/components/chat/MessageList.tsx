@@ -1,9 +1,11 @@
+import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef } from 'react'
 import type { MessageRow } from '../../types/message'
 import type { FullscreenMediaPayload } from '../../types/mediaViewer'
 import { cn } from '../../lib/cn'
 import { EmptyChatState } from './EmptyChatState'
 import { MessageCard } from './MessageCard'
+import { ThreadTypingBubble } from './ThreadTypingBubble'
 
 type MessageListProps = {
   messages: MessageRow[]
@@ -11,6 +13,8 @@ type MessageListProps = {
   peerUsername: string | null
   loading: boolean
   peerReady: boolean
+  /** Live typing from the other person (thread bubble, chat only). */
+  peerTyping?: boolean
   /** When set, opens fullscreen media (Memories thread). Omit on chat (text-only). */
   onOpenMedia?: (payload: FullscreenMediaPayload) => void
   onOpenMessageActions?: (message: MessageRow) => void
@@ -25,6 +29,7 @@ export function MessageList({
   peerUsername,
   loading,
   peerReady,
+  peerTyping = false,
   onOpenMedia,
   onOpenMessageActions,
   emptyVariant = 'chat',
@@ -36,9 +41,14 @@ export function MessageList({
     bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
   }, [messages])
 
+  useEffect(() => {
+    if (!peerTyping) return
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [peerTyping])
+
   const lastOwnId = [...messages].reverse().find((m) => m.sender_id === currentUserId)?.id
 
-  const showEmpty = !loading && peerReady && messages.length === 0
+  const showEmpty = !loading && peerReady && messages.length === 0 && !peerTyping
 
   return (
     <div
@@ -93,6 +103,24 @@ export function MessageList({
             )
           })}
         </ul>
+      ) : null}
+
+      {peerReady && !loading && emptyVariant === 'chat' ? (
+        <AnimatePresence initial={false}>
+          {peerTyping ? (
+            <motion.div
+              key="thread-typing"
+              layout
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className={cn(messages.length > 0 ? 'mt-2' : 'mt-1')}
+            >
+              <ThreadTypingBubble />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       ) : null}
 
       <div ref={bottomRef} aria-hidden className="h-px w-full shrink-0 scroll-mt-4" />

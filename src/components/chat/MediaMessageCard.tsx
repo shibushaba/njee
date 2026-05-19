@@ -127,7 +127,7 @@ export function MediaMessageCard({
   const replyAuthor =
     message.reply_sender_id && currentUserId && message.reply_sender_id === currentUserId
       ? 'You'
-      : (peerUsername ?? 'Partner')
+      : (peerUsername ?? '—')
 
   const openMenu = useCallback(() => {
     onOpenActions?.(message)

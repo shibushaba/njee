@@ -91,10 +91,10 @@ export function ChatPage() {
       {!loading && !error && !peerReady ? (
         <div className="shrink-0 px-2 pb-2 pt-1.5 sm:px-2.5">
           <NjeCard tone="yellow" padding="md" className="shadow-[0_2px_0_0_rgba(90,46,30,0.05)]">
-            <p className="text-sm font-semibold text-nje-border">No peer profile found</p>
+            <p className="text-sm font-semibold text-nje-border">No other profile found</p>
             <p className="mt-1 text-xs leading-relaxed text-nje-muted">
-              Add a profile row in Supabase for each account so the app can find your partner. See supabase README in the
-              repo for the exact SQL.
+              Add a profile row in Supabase for each account so the app can resolve the other user. See supabase README in
+              the repo for the exact SQL.
             </p>
           </NjeCard>
         </div>
@@ -106,6 +106,7 @@ export function ChatPage() {
         peerUsername={peerUsername}
         loading={loading}
         peerReady={peerReady}
+        peerTyping={peerTyping}
         onOpenMessageActions={(m) => {
           if (m.deleted_at) return
           setSheetMessage(m)

@@ -1,9 +1,8 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { avatarVariantForUsername } from '../../utils/avatarVariant'
 import { cn } from '../../lib/cn'
 import { Avatar3D } from './avatars/Avatar3D'
 import { OnlineStatus } from './OnlineStatus'
-import { TypingIndicator } from './TypingIndicator'
 
 type PresenceBarProps = {
   myUsername: string | null
@@ -47,7 +46,6 @@ export function PresenceBar({
         <div className="flex items-start gap-2">
           <Avatar3D variant={meVariant} isTyping={myTyping} size="sm" className="shrink-0 rounded-sm" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[0.58rem] font-bold uppercase tracking-[0.14em] text-nje-whisper">You</p>
             <p className="truncate text-xs font-bold leading-tight text-nje-border">{displayName(myUsername, '…')}</p>
             <div className="mt-1">
               <OnlineStatus online={roomConnected && Boolean(myUsername)} />
@@ -60,15 +58,11 @@ export function PresenceBar({
         <div className="flex items-start gap-2">
           <Avatar3D variant={peerVariant} isTyping={peerTyping} size="sm" className="shrink-0 rounded-sm" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[0.58rem] font-bold uppercase tracking-[0.14em] text-nje-whisper">Partner</p>
             <p className="truncate text-xs font-bold leading-tight text-nje-border">
               {peerReady ? displayName(peerUsername, '…') : '—'}
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
               <OnlineStatus online={peerReady && peerOnline} />
-              <AnimatePresence mode="wait">
-                {peerReady && peerTyping ? <TypingIndicator key="typing" /> : null}
-              </AnimatePresence>
             </div>
           </div>
         </div>

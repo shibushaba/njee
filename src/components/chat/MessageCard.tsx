@@ -65,7 +65,7 @@ export function MessageCard({
   const replyAuthor =
     message.reply_sender_id && currentUserId && message.reply_sender_id === currentUserId
       ? 'You'
-      : (peerUsername ?? 'Partner')
+      : (peerUsername ?? '—')
 
   return (
     <motion.article
