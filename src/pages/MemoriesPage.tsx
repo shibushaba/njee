@@ -115,14 +115,7 @@ export function MemoriesPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PageHeader
-        title="Memories"
-        description={
-          peerUsername
-            ? `Photos and videos with ${peerUsername}. Either of you can upload from your own device; both can open and play without signing in to Google.`
-            : 'Photos and videos shared here. Either of you can upload from your own device; both can open and play without signing in to Google.'
-        }
-      />
+      <PageHeader title="Memories" />
 
       {error ? (
         <div className="shrink-0 pb-2 pt-1">
@@ -145,40 +138,23 @@ export function MemoriesPage() {
       ) : null}
 
       {peerReady ? (
-        <NjeCard tone="surface" padding="md" className="shrink-0 shadow-[var(--shadow-nje-flat-sm)]">
-          <p className="text-[0.58rem] font-bold uppercase tracking-[0.14em] text-nje-whisper">Google Drive</p>
-          <p className="mt-1 text-xs leading-relaxed text-nje-muted">
-            <span className="font-semibold text-nje-border/90">Upload:</span> each of you connects Google once per
-            device (the shared Drive folder must allow both accounts to add files).{' '}
-            <span className="font-semibold text-nje-border/90">Watch:</span> no Google sign-in needed—each file is{' '}
-            <span className="font-semibold text-nje-border/90">anyone with the link can view</span>, so either of you
-            can tap and play. After view-once / view-twice finishes, the file is removed from Drive when possible to save
-            quota (run migration 007 for DB cleanup).
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <GoogleConnectButton
-              connected={gd.connected}
-              busy={gd.busy || !gd.platformReady}
-              disabled={!googleConfigured}
-              onConnect={gd.connect}
-              onDisconnect={gd.disconnect}
-            />
-            {googleConfigured && gd.connected && gd.foldersReady ? (
-              <span className="text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-nje-muted">Ready</span>
-            ) : null}
-          </div>
+        <div className="shrink-0 flex flex-wrap items-center gap-2 border-b-[2px] border-nje-border pb-2 pt-1 shadow-[0_2px_0_0_rgba(90,46,30,0.04)]">
+          <GoogleConnectButton
+            connected={gd.connected}
+            busy={gd.busy || !gd.platformReady}
+            disabled={!googleConfigured}
+            onConnect={gd.connect}
+            onDisconnect={gd.disconnect}
+          />
+          {googleConfigured && gd.connected && gd.foldersReady ? (
+            <span className="text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-nje-muted">Ready</span>
+          ) : null}
           {gd.error ? (
-            <p className="mt-2 text-xs font-medium text-nje-border" role="alert">
+            <p className="w-full text-xs font-medium text-nje-border" role="alert">
               {gd.error}
             </p>
           ) : null}
-          {!googleConfigured ? (
-            <p className="mt-2 text-xs text-nje-muted">
-              Add VITE_GOOGLE_CLIENT_ID and VITE_GOOGLE_DRIVE_ROOT_FOLDER_ID to .env.local (see .env.example). Never put
-              your client secret in the frontend.
-            </p>
-          ) : null}
-        </NjeCard>
+        </div>
       ) : null}
 
       <MessageList

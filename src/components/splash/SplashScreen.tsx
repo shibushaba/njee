@@ -54,7 +54,7 @@ export function SplashScreen({ onFinish, className }: SplashScreenProps) {
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-nje-muted">Welcome</p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-nje-border sm:text-4xl">nje</h1>
         <p className="mt-2 text-sm font-medium leading-relaxed text-nje-border/90 sm:text-base">
-          ellathum njenjenje
+          njenjenje
         </p>
         <p className="mt-6 border-t-[3px] border-nje-border pt-4 text-xs font-semibold uppercase tracking-widest text-nje-muted">
           Tap to continue

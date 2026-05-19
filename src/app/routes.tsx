@@ -6,7 +6,6 @@ import { useAuth } from '../hooks/useAuth'
 import { MobileAppShell } from '../layouts/MobileAppShell'
 import { ChatRoomProvider } from '../providers/ChatRoomProvider'
 import { ChangePasswordPage } from '../pages/ChangePasswordPage'
-import { HomePage } from '../pages/HomePage'
 import { LoginPage } from '../pages/LoginPage'
 import { MemoriesPage } from '../pages/MemoriesPage'
 import { MoodPage } from '../pages/MoodPage'
@@ -39,7 +38,7 @@ export function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<MobileAppShell />}>
-          <Route index element={<HomePage />} />
+          <Route index element={<Navigate to="/chat" replace />} />
           <Route
             path="chat"
             element={
@@ -64,7 +63,7 @@ export function AppRoutes() {
           <Route path="settings/password" element={<ChangePasswordPage />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/chat" replace />} />
     </Routes>
   )
 }

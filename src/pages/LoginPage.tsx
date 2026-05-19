@@ -7,7 +7,7 @@ export function LoginPage() {
   const { session, status } = useAuth()
   const location = useLocation()
   const from =
-    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/'
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/chat'
 
   if (status === 'ready' && session) {
     return <Navigate to={from} replace />
@@ -29,7 +29,7 @@ export function LoginPage() {
             nje
           </h1>
           <p className="mt-stack-md max-w-prose text-sm leading-relaxed text-nje-muted sm:text-base">
-            ellathum njenjenje — sign in with your username and password.
+            njenjenje — sign in with your username and password.
           </p>
         </header>
         <LoginForm />
