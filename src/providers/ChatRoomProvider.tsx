@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
+import { readDriveRootFolderId, readGoogleClientId } from '../config/googleDrive'
 import { loginEmailToUsername } from '../config/njeAuth'
 import { ChatRoomContext, type ChatRoomContextValue } from '../context/chat-room-context'
 import { useAuth } from '../hooks/useAuth'
-import { useMediaUpload } from '../hooks/useMediaUpload'
 import { supabase } from '../lib/supabase'
 import {
   fetchConversation,
@@ -16,10 +16,13 @@ import {
   softDeleteMessage,
 } from '../services/message.service'
 import { classifyMediaFile } from '../services/media.service'
+import { driveAddAnyoneReaderPermission, driveUploadMultipart } from '../services/googleDrive/driveApi'
 import type { MessageRow } from '../types/message'
+import { GDRIVE_MEDIA_PREFIX } from '../utils/gdriveMediaUrl'
 import type { ReplyInsertMeta } from '../utils/messageReply'
 import { viewLimitFromSendMode, type MediaSendViewMode } from '../utils/mediaViewMode'
-import { chatRoomTopicId, mediaThreadFolder } from '../utils/chatTopic'
+import { chatRoomTopicId } from '../utils/chatTopic'
+import { GoogleDriveProvider, useGoogleDrive } from './GoogleDriveProvider'
 
 type ChatRoomProviderProps = {
   children: ReactNode
@@ -35,9 +38,18 @@ function readPeerOnline(channel: RealtimeChannel, peerId: string | null) {
 }
 
 export function ChatRoomProvider({ children }: ChatRoomProviderProps) {
+  return (
+    <GoogleDriveProvider>
+      <ChatRoomProviderInner>{children}</ChatRoomProviderInner>
+    </GoogleDriveProvider>
+  )
+}
+
+function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
   const { user } = useAuth()
   const currentId = user?.id ?? null
   const myUsername = loginEmailToUsername(user?.email ?? '') ?? null
+  const gd = useGoogleDrive()
 
   const [peerId, setPeerId] = useState<string | null>(null)
   const [peerUsername, setPeerUsername] = useState<string | null>(null)
@@ -48,9 +60,6 @@ export function ChatRoomProvider({ children }: ChatRoomProviderProps) {
   const [peerOnline, setPeerOnline] = useState(false)
   const [peerTyping, setPeerTyping] = useState(false)
   const [roomConnected, setRoomConnected] = useState(false)
-
-  const threadFolder = currentId && peerId ? mediaThreadFolder(currentId, peerId) : null
-  const { uploadFile } = useMediaUpload(threadFolder)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
   const typingOffTimerRef = useRef<number>(0)
@@ -257,19 +266,50 @@ export function ChatRoomProvider({ children }: ChatRoomProviderProps) {
       if (!kind) {
         return { error: 'Only images or videos can be sent.' }
       }
+
+      if (!readGoogleClientId() || !readDriveRootFolderId()) {
+        return {
+          error:
+            'Google Drive is not configured. Add VITE_GOOGLE_CLIENT_ID and VITE_GOOGLE_DRIVE_ROOT_FOLDER_ID to .env.local.',
+        }
+      }
+      if (!gd.accessToken) {
+        return { error: 'Connect Google on the Memories screen before uploading.' }
+      }
+      if (!gd.foldersReady) {
+        return { error: 'Google Drive folders are still preparing. Try again in a moment.' }
+      }
+
+      const category = kind === 'image' ? 'photos' : 'videos'
+      const parent = gd.folderId(category)
+      if (!parent) {
+        return { error: 'Drive folder for this media type is not ready.' }
+      }
+
       notifyTyping(false)
       setSending(true)
-      const up = await uploadFile(file, onUploadProgress)
-      if (up.error) {
+
+      const up = await driveUploadMultipart(gd.accessToken, file, parent, (loaded, total) => {
+        if (total > 0) onUploadProgress?.(Math.min(99, Math.round((loaded / total) * 100)))
+      })
+      onUploadProgress?.(100)
+
+      if (up.error || !up.file?.id) {
         setSending(false)
-        return { error: up.error }
+        return { error: up.error ?? 'Upload to Google Drive failed.' }
       }
-      if (!up.path) {
+
+      const share = await driveAddAnyoneReaderPermission(gd.accessToken, up.file.id)
+      if (share.error) {
         setSending(false)
-        return { error: 'Upload failed.' }
+        return {
+          error: `Uploaded, but sharing failed (partner needs link access): ${share.error}`,
+        }
       }
+
+      const mediaPath = `${GDRIVE_MEDIA_PREFIX}${up.file.id}`
       const res = await sendMediaMessage(currentId, peerId, {
-        mediaPath: up.path,
+        mediaPath,
         mediaType: kind,
         caption,
         viewLimit: viewLimitFromSendMode(opts.viewMode),
@@ -291,7 +331,7 @@ export function ChatRoomProvider({ children }: ChatRoomProviderProps) {
       }
       return { error: null }
     },
-    [currentId, peerId, notifyTyping, uploadFile],
+    [currentId, peerId, notifyTyping, gd.accessToken, gd.foldersReady, gd.folderId],
   )
 
   const patchMessage = useCallback((messageId: string, patch: Partial<MessageRow>) => {

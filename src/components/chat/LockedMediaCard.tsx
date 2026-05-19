@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { useSignedMediaUrl } from '../../hooks/useSignedMediaUrl'
 import { cn } from '../../lib/cn'
+import { isGdriveMediaRef } from '../../utils/gdriveMediaUrl'
 import { MediaLockOverlay } from './MediaLockOverlay'
 
 type LockedMediaCardProps = {
@@ -14,7 +15,7 @@ type LockedMediaCardProps = {
  * Locked limited media: blurred preview + calm lock overlay (no full reopen).
  */
 export function LockedMediaCard({ storagePath, kind, className }: LockedMediaCardProps) {
-  const { url, loading } = useSignedMediaUrl(storagePath, Boolean(storagePath))
+  const { url, loading } = useSignedMediaUrl(storagePath, Boolean(storagePath), kind)
 
   return (
     <motion.div
@@ -34,7 +35,15 @@ export function LockedMediaCard({ storagePath, kind, className }: LockedMediaCar
           draggable={false}
         />
       ) : null}
-      {url && kind === 'video' ? (
+      {url && kind === 'video' && isGdriveMediaRef(storagePath) ? (
+        <img
+          src={url}
+          alt=""
+          className="h-full w-full scale-110 object-cover opacity-[0.38] blur-2xl"
+          draggable={false}
+        />
+      ) : null}
+      {url && kind === 'video' && !isGdriveMediaRef(storagePath) ? (
         <video
           src={url}
           muted

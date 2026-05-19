@@ -20,7 +20,7 @@ export const HOME_SECTIONS: HomeSection[] = [
     to: '/memories',
     eyebrow: 'Keep',
     title: 'Memories',
-    description: 'Small artifacts from days you do not want to forget.',
+    description: 'Photos and videos live in your shared Google Drive folder; nje only keeps the gentle thread.',
     tone: 'yellow',
   },
   {

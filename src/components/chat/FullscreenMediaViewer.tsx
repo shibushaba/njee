@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { WheelEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
-import { recordMediaView } from '../../services/media.service'
+import { purgeDriveMemoryAfterLock, recordMediaView } from '../../services/media.service'
 import type { MessageRow } from '../../types/message'
 import type { FullscreenMediaPayload } from '../../types/mediaViewer'
 import { VideoPlayer } from './VideoPlayer'
@@ -56,7 +56,9 @@ export function FullscreenMediaViewer({
     recordedForOpenRef.current = messageId
 
     const mid = messageId
-    void recordMediaView(mid).then((r) => {
+    const driveFid = payload?.driveFileId ?? null
+
+    void recordMediaView(mid).then(async (r) => {
       if (!r.unlimited && !r.ok && !r.locked) {
         onRecordMediaViewFailureRef.current?.()
       }
@@ -65,6 +67,15 @@ export function FullscreenMediaViewer({
         const patch: Partial<MessageRow> = {}
         if (typeof r.current_views === 'number') patch.current_views = r.current_views
         if (r.locked) patch.is_locked = true
+
+        if (r.locked && !r.unlimited && driveFid) {
+          const purged = await purgeDriveMemoryAfterLock(driveFid, mid)
+          if (purged.cleared) {
+            patch.media_url = null
+            patch.media_type = null
+          }
+        }
+
         if (Object.keys(patch).length > 0) {
           onMediaViewRecordedRef.current?.(mid, patch)
         }
@@ -74,7 +85,7 @@ export function FullscreenMediaViewer({
         onCloseRef.current()
       }
     })
-  }, [open, messageId])
+  }, [open, messageId, payload?.driveFileId])
 
   useEffect(() => {
     if (!open) {
@@ -193,6 +204,15 @@ export function FullscreenMediaViewer({
                       className="max-h-[calc(100dvh-7rem)] max-w-full border-[2px] border-nje-border object-contain shadow-[0_3px_0_0_rgba(90,46,30,0.08)]"
                     />
                   </div>
+                </div>
+              ) : payload.driveVideoEmbedUrl ? (
+                <div className="flex h-full max-h-[calc(100dvh-4.75rem)] w-full items-center justify-center px-1">
+                  <iframe
+                    title="Memory video"
+                    src={payload.driveVideoEmbedUrl}
+                    allow="fullscreen; autoplay"
+                    className="h-full w-full max-h-[calc(100dvh-6rem)] border-[2px] border-nje-border bg-nje-bg"
+                  />
                 </div>
               ) : (
                 <div className="flex h-full max-h-[calc(100dvh-4.75rem)] w-full items-center justify-center">

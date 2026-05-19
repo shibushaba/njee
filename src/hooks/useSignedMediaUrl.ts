@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { createSignedMediaUrl } from '../services/media.service'
 
-export function useSignedMediaUrl(path: string | null | undefined, enabled: boolean) {
+export function useSignedMediaUrl(
+  path: string | null | undefined,
+  enabled: boolean,
+  mediaKind: 'image' | 'video' = 'image',
+) {
   const [url, setUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -15,11 +19,16 @@ export function useSignedMediaUrl(path: string | null | undefined, enabled: bool
     }
 
     let cancelled = false
+    let revoke: (() => void) | undefined
     setLoading(true)
     setError(null)
 
-    void createSignedMediaUrl(path).then((res) => {
-      if (cancelled) return
+    void createSignedMediaUrl(path, { mediaKind, fullMedia: false }).then((res) => {
+      if (cancelled) {
+        res.revoke?.()
+        return
+      }
+      revoke = res.revoke
       setUrl(res.url)
       setError(res.error)
       setLoading(false)
@@ -27,8 +36,9 @@ export function useSignedMediaUrl(path: string | null | undefined, enabled: bool
 
     return () => {
       cancelled = true
+      revoke?.()
     }
-  }, [path, enabled])
+  }, [path, enabled, mediaKind])
 
   return { url, loading, error }
 }

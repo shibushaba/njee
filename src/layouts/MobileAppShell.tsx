@@ -8,7 +8,8 @@ export function MobileAppShell() {
   const location = useLocation()
   const reduceMotion = useReducedMotion()
   const isChatRoute = location.pathname === '/chat'
-  const fullBleedRoute = isChatRoute || location.pathname === '/memories'
+  const fullBleedRoute =
+    isChatRoute || location.pathname === '/memories'
 
   const pageTransition = reduceMotion
     ? {

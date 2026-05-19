@@ -7,6 +7,7 @@ import { useSignedMediaUrl } from '../../hooks/useSignedMediaUrl'
 import { useMediaViews } from '../../hooks/useMediaViews'
 import { useLongPress } from '../../hooks/useLongPress'
 import { createSignedMediaUrl } from '../../services/media.service'
+import { isGdriveMediaRef, parseGdriveFileId, publicDriveThumbnailUrl } from '../../utils/gdriveMediaUrl'
 import type { FullscreenMediaPayload } from '../../types/mediaViewer'
 import { EphemeralMediaPlaceholder } from './EphemeralMediaPlaceholder'
 import { InlineMessageReply } from './InlineMessageReply'
@@ -36,13 +37,37 @@ export function MediaMessageCard({
   const inView = useInView(rootRef, { once: true, margin: '48px' })
   const { isLocked, canOpen, hasLimit, isUnlimited, isEphemeral, opensLeft } = useMediaViews(message)
   const shouldLoadThreadPreview = !isEphemeral && !isLocked && inView
-  const { url, loading, error } = useSignedMediaUrl(message.media_url, shouldLoadThreadPreview)
+  const mediaKind = message.message_type === 'video' ? 'video' : 'image'
+  const { url, loading, error } = useSignedMediaUrl(message.media_url, shouldLoadThreadPreview, mediaKind)
 
   const [openingEphemeral, setOpeningEphemeral] = useState(false)
   const [ephemeralError, setEphemeralError] = useState<string | null>(null)
 
   const openUnlimited = useCallback(() => {
-    if (!canOpen || !url) return
+    const mediaUrl = message.media_url
+    if (!canOpen || !mediaUrl) return
+    if (isGdriveMediaRef(mediaUrl)) {
+      void (async () => {
+        const fileId = parseGdriveFileId(mediaUrl)
+        if (!fileId) return
+        const res = await createSignedMediaUrl(mediaUrl, {
+          mediaKind,
+          fullMedia: true,
+        })
+        if (res.error) return
+        if (!res.url && !(mediaKind === 'video' && res.driveVideoEmbedUrl)) return
+        onOpenMedia({
+          kind: mediaKind === 'video' ? 'video' : 'image',
+          url: res.url ?? publicDriveThumbnailUrl(fileId),
+          messageId: message.id,
+          caption: message.content.trim() || undefined,
+          driveFileId: fileId,
+          driveVideoEmbedUrl: res.driveVideoEmbedUrl ?? undefined,
+        })
+      })()
+      return
+    }
+    if (!url) return
     if (message.message_type === 'image') {
       onOpenMedia({
         kind: 'image',
@@ -58,37 +83,44 @@ export function MediaMessageCard({
         caption: message.content.trim() || undefined,
       })
     }
-  }, [canOpen, message.content, message.id, message.message_type, onOpenMedia, url])
+  }, [canOpen, mediaKind, message.content, message.id, message.media_url, message.message_type, onOpenMedia, url])
 
   const openEphemeral = useCallback(async () => {
-    if (!canOpen || !message.media_url) return
+    const mediaUrl = message.media_url
+    if (!canOpen || !mediaUrl) return
     setEphemeralError(null)
     setOpeningEphemeral(true)
-    const res = await createSignedMediaUrl(message.media_url)
+    const res = await createSignedMediaUrl(mediaUrl, {
+      mediaKind,
+      fullMedia: true,
+    })
     setOpeningEphemeral(false)
-    if (!res.url || res.error) {
+    if (res.error || (!res.url && !(message.message_type === 'video' && res.driveVideoEmbedUrl))) {
       setEphemeralError(res.error ?? 'Could not open')
       return
     }
+    const fileId = parseGdriveFileId(mediaUrl)
     if (message.message_type === 'image') {
       onOpenMedia({
         kind: 'image',
-        url: res.url,
+        url: res.url ?? '',
         messageId: message.id,
         caption: message.content.trim() || undefined,
+        driveFileId: fileId ?? undefined,
       })
     } else if (message.message_type === 'video') {
       onOpenMedia({
         kind: 'video',
-        url: res.url,
+        url: res.url ?? (fileId ? publicDriveThumbnailUrl(fileId) : ''),
         messageId: message.id,
         caption: message.content.trim() || undefined,
+        driveFileId: fileId ?? undefined,
+        driveVideoEmbedUrl: res.driveVideoEmbedUrl ?? undefined,
       })
     }
-  }, [canOpen, message.content, message.id, message.media_url, message.message_type, onOpenMedia])
+  }, [canOpen, mediaKind, message.content, message.id, message.media_url, message.message_type, onOpenMedia])
 
   const caption = message.content.trim()
-  const mediaKind = message.message_type === 'video' ? 'video' : 'image'
   const ephemeralLimit = message.view_limit ?? 1
   const ephemeralOpensLeft = opensLeft ?? ephemeralLimit
 
@@ -198,7 +230,23 @@ export function MediaMessageCard({
                   className="mx-auto h-full max-h-[min(40vh,12rem)] w-full object-cover transition-transform duration-300 group-hover:scale-[1.01] group-focus-visible:scale-[1.01] sm:max-h-[min(42vh,13rem)]"
                 />
               ) : null}
-              {!error && url && message.message_type === 'video' ? (
+              {!error && url && message.message_type === 'video' && isGdriveMediaRef(message.media_url) ? (
+                <div className="relative mx-auto h-full max-h-[min(40vh,12rem)] w-full sm:max-h-[min(42vh,13rem)]">
+                  <img
+                    src={url}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover opacity-95"
+                  />
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <span className="border-[2px] border-nje-border bg-nje-surface/90 px-2 py-0.5 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-nje-border shadow-[0_2px_0_0_rgba(90,46,30,0.06)]">
+                      Video
+                    </span>
+                  </span>
+                </div>
+              ) : null}
+              {!error && url && message.message_type === 'video' && !isGdriveMediaRef(message.media_url) ? (
                 <div className="relative mx-auto h-full max-h-[min(40vh,12rem)] w-full sm:max-h-[min(42vh,13rem)]">
                   <video
                     src={url}
