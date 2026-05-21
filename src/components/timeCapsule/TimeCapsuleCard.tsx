@@ -122,7 +122,7 @@ export function TimeCapsuleCard({ capsule, currentUserId, peerUsername, onDelete
         </div>
       ) : (
         <p className="relative z-[1] text-[10px] leading-relaxed text-nje-whisper">
-          The words and film inside stay hidden until the hour you chose — together, not a broadcast.
+          The words and film inside stay hidden until the hour you chose.
         </p>
       )}
     </motion.article>
