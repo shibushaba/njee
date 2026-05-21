@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_GOOGLE_DRIVE_ROOT_FOLDER_ID?: string
   /** Optional Team Drive id when the vault root lives on a Shared Drive. */
   readonly VITE_GOOGLE_SHARED_DRIVE_ID?: string
+  /** Web Push / VAPID public key (URL-safe base64). Pair with Edge secrets + `push-notify` function. */
+  readonly VITE_VAPID_PUBLIC_KEY?: string
 }
 
 interface ImportMeta {

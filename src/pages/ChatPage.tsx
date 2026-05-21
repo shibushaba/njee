@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
 import { NjeCard } from '../components/ui/NjeCard'
+import { MilestonePopup } from '../components/streak/MilestonePopup'
 import { ChatHeader } from '../components/chat/ChatHeader'
 import { MessageActionSheet } from '../components/chat/MessageActionSheet'
 import { MessageInput } from '../components/chat/MessageInput'
 import { MessageList } from '../components/chat/MessageList'
 import { PresenceBar } from '../components/chat/PresenceBar'
 import { useChatRoom } from '../context/chat-room-context'
+import { useStreak } from '../hooks/useStreak'
 import type { MessageRow } from '../types/message'
 import { buildReplyInsertMeta } from '../utils/messageReply'
 
@@ -30,6 +32,8 @@ export function ChatPage() {
     deleteMessage,
     notifyTyping,
   } = useChatRoom()
+
+  const streak = useStreak(currentId, peerId)
 
   const textMessages = useMemo(() => messages.filter((m) => m.message_type === 'text'), [messages])
 
@@ -67,7 +71,13 @@ export function ChatPage() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="sticky top-0 z-30 shrink-0 bg-nje-bg pb-0.5">
         <div className="overflow-hidden rounded-sm border-[2px] border-nje-border shadow-[0_2px_0_0_rgba(90,46,30,0.05)]">
-          <ChatHeader peerUsername={peerUsername} className="border-b-0 shadow-none" />
+          <ChatHeader
+            peerUsername={peerUsername}
+            ritualStreak={
+              peerReady ? { count: streak.row?.current_streak ?? 0, loading: streak.loading } : undefined
+            }
+            className="border-b-0 shadow-none"
+          />
           <PresenceBar
             myUsername={myUsername}
             peerUsername={peerUsername}
@@ -126,6 +136,8 @@ export function ChatPage() {
         disabled={!peerReady || Boolean(error)}
         sending={sending}
       />
+
+      <MilestonePopup tier={streak.milestone} onDismiss={streak.dismissMilestone} />
 
       {sheetMessage ? (
         <MessageActionSheet

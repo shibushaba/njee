@@ -20,6 +20,8 @@
   --spacing-stack-md: 1.25rem;
   --spacing-stack-lg: 1.75rem;
   --spacing-stack-xl: 2.25rem;
+  --animate-nje-flame: nje-flame-flicker 2.8s ease-in-out infinite;
+  --animate-nje-flame-dim: nje-flame-flicker-dim 3.4s ease-in-out infinite;
 }
 
 html {
@@ -28,6 +30,36 @@ html {
 
 body {
   @apply m-0 min-h-dvh bg-nje-bg font-sans text-nje-border;
+}
+
+@keyframes nje-flame-flicker {
+  0%,
+  100% {
+    transform: scaleY(1) scaleX(1) translateY(0);
+    transform-origin: 50% 100%;
+  }
+  35% {
+    transform: scaleY(1.05) scaleX(0.97) translateY(-0.5px);
+    transform-origin: 50% 100%;
+  }
+  65% {
+    transform: scaleY(0.97) scaleX(1.02) translateY(0.5px);
+    transform-origin: 50% 100%;
+  }
+}
+
+@keyframes nje-flame-flicker-dim {
+  0%,
+  100% {
+    opacity: 0.88;
+    transform: scaleY(1);
+    transform-origin: 50% 100%;
+  }
+  50% {
+    opacity: 0.96;
+    transform: scaleY(1.02);
+    transform-origin: 50% 100%;
+  }
 }
 
 #root {

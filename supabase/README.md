@@ -7,7 +7,10 @@
 5. Run `migrations/005_message_reply_delete.sql` for **reply metadata**, **soft delete** (`deleted_at`), sender **update** policy, and **`record_message_media_view`** guard on deleted rows. This migration matches **`reply_to_message_id`** and the RPC parameter type to **`messages.id`** (uuid or bigint). If `message_views.message_id` does not match `messages.id`, fix that first or the migration will raise a clear error.
 6. _(Optional)_ Run `migrations/006_drive_files.sql` only if you use the legacy `drive_files` explorer table. **Memories** use `messages` + Google Drive and do not require `006`.
 7. Run `migrations/007_clear_locked_drive_media.sql` so the app can clear **`media_url` / `media_type`** on **locked** Drive-backed messages after the file is deleted from Google Drive (saves your ~1 GB quota).
-8. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
+8. Run `migrations/008_daily_streaks.sql` for **`daily_streaks`**, **`refresh_daily_streak`**, message triggers, and **realtime** on the streak row (shared daily ritual counter for two users). If you see **`column "user_a" does not exist`**, you likely had an older `daily_streaks` table with a different shape — re-run the full migration file (it drops and recreates that table; streak rows are rebuilt from **`messages`** by the script at the end).
+9. Run `migrations/009_notifications.sql` for **`notifications`**, **`notification_preferences`**, message + streak triggers, and **realtime** on both tables. **`notifications.ref_message_id`** is created as the same type as **`messages.id`** (uuid or bigint, matching migration **005**).
+10. Run `migrations/010_push_subscriptions.sql` for **`push_subscriptions`** (Web Push device rows; RLS for authenticated users).
+11. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
 
 ```sql
 insert into public.profiles (id, username)
@@ -20,3 +23,58 @@ on conflict (id) do update set username = excluded.username;
 ```
 
 Adjust emails if yours differ. Users can also `insert` their own profile once if RLS allows (policy `profiles_insert_own`).
+
+---
+
+## Web Push (optional)
+
+Without this, the app still has **in-app notifications** + **silent tab notifications** (`Notification` API when the tab is in the background). **Web Push** delivers the same titles when nje is fully closed, using the service worker at **`public/sw.js`**.
+
+### 1. VAPID keys
+
+Generate a key pair (install `web-push` globally, or use OpenSSL + base64 — the `web-push` CLI is easiest):
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+- Put the **public** key in your Vite env as **`VITE_VAPID_PUBLIC_KEY`** (rebuild the app).
+- You will use the **private** key only in Supabase Edge secrets (never in the browser).
+
+### 2. Edge function `push-notify`
+
+From the repo root (with [Supabase CLI](https://supabase.com/docs/guides/cli) linked to your project):
+
+```bash
+supabase functions deploy push-notify --no-verify-jwt
+```
+
+Set **Edge Function secrets** (Dashboard → Edge Functions → `push-notify` → Secrets, or CLI):
+
+| Secret | Value |
+|--------|--------|
+| `NOTIFY_WEBHOOK_SECRET` | Long random string (you choose); must match the webhook header below |
+| `VAPID_PUBLIC_KEY` | Same string as `VITE_VAPID_PUBLIC_KEY` |
+| `VAPID_PRIVATE_KEY` | Private key from `web-push generate-vapid-keys` |
+| `VAPID_SUBJECT` | Contact URI, e.g. `mailto:you@yourdomain.com` |
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are usually provided automatically on hosted Supabase.
+
+### 3. Database Webhook
+
+In Supabase **Database → Webhooks** (or Integrations), create a webhook:
+
+- **Table**: `public.notifications`
+- **Events**: Insert
+- **HTTP Request**: POST to your function URL, e.g. `https://<project-ref>.supabase.co/functions/v1/push-notify`
+- **HTTP Headers**: add `x-webhook-secret: <same as NOTIFY_WEBHOOK_SECRET>`
+
+The function checks that header, loads **`push_subscriptions`** for `record.user_id`, respects **per-kind** columns on **`notification_preferences`** (same rules as the rest of nje), and sends a silent payload to each subscription.
+
+### 4. User flow
+
+1. Run migration **`010_push_subscriptions.sql`**.
+2. Deploy **`push-notify`** + secrets + webhook.
+3. Users open **Settings → Notifications**, tap **Register this device** (after `VITE_VAPID_PUBLIC_KEY` is in the deployed build).
+
+HTTPS and a supported browser are required for push (localhost is OK for development on most browsers).

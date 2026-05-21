@@ -1,0 +1,5 @@
+# Minimal Supabase CLI config. Set `project_id` after `supabase link`, or keep for local reference.
+project_id = "njee"
+
+[functions.push-notify]
+verify_jwt = false

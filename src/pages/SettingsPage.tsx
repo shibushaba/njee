@@ -18,24 +18,23 @@ export function SettingsPage() {
           </p>
         </NjeCard>
         <NavLink
+          to="/settings/notifications"
+          className="block border-[3px] border-nje-border bg-nje-surface px-gutter-md py-stack-lg text-sm font-bold uppercase tracking-wide text-nje-border shadow-[var(--shadow-nje-flat-sm)] transition-[transform,box-shadow] hover:shadow-[var(--shadow-nje-flat)] motion-safe:active:translate-y-px"
+        >
+          Notifications
+        </NavLink>
+        <NavLink
+          to="/ritual"
+          className="block border-[3px] border-nje-border bg-nje-surface px-gutter-md py-stack-lg text-sm font-bold uppercase tracking-wide text-nje-border shadow-[var(--shadow-nje-flat-sm)] transition-[transform,box-shadow] hover:shadow-[var(--shadow-nje-flat)] motion-safe:active:translate-y-px"
+        >
+          Daily ritual
+        </NavLink>
+        <NavLink
           to="/settings/password"
           className="block border-[3px] border-nje-border bg-nje-mint px-gutter-md py-stack-lg text-sm font-bold uppercase tracking-wide text-nje-border shadow-[var(--shadow-nje-flat-sm)] transition-[transform,box-shadow] hover:shadow-[var(--shadow-nje-flat)] motion-safe:active:translate-y-px"
         >
           Change password
         </NavLink>
-        <NjeCard
-          tone="surface"
-          padding="lg"
-          className="flex flex-col gap-stack-md border-nje-border shadow-[var(--shadow-nje-flat)] sm:flex-row sm:items-center sm:justify-between"
-        >
-          <div>
-            <p className="text-lg font-bold text-nje-border">Notifications</p>
-            <p className="mt-stack text-sm text-nje-muted">Coming soon</p>
-          </div>
-          <span className="w-fit border-[3px] border-nje-border bg-nje-bg px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-nje-muted">
-            Off
-          </span>
-        </NjeCard>
         <NjeCard
           tone="surface"
           padding="lg"
