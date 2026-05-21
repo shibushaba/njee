@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import { AppLayout } from '../layouts/AppLayout'
 import { AuthProvider } from '../providers/AuthProvider'
+import { PwaShell } from '../components/pwa/PwaShell'
 import { SplashScreen } from '../components/splash/SplashScreen'
 import { AppRoutes } from './routes'
 
@@ -17,6 +18,7 @@ export function App() {
     <BrowserRouter>
       <AuthProvider>
         <AppLayout>
+          {!splash ? <PwaShell /> : null}
           <AnimatePresence mode="wait">
             {splash ? (
               <SplashScreen key="splash" onFinish={handleSplashFinish} />

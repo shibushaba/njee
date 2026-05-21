@@ -1,3 +1,4 @@
+/* Web Push handlers — loaded into the main Workbox service worker via importScripts. */
 /* global self */
 self.addEventListener('push', (event) => {
   let payload = { title: 'nje', body: '', url: '/chat' }

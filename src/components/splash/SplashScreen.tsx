@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '../../lib/cn'
+import { TypingSplashAnimation } from '../pwa/TypingSplashAnimation'
 
 type SplashScreenProps = {
   onFinish: () => void
   className?: string
 }
 
-const AUTO_DISMISS_MS = 2200
+const AUTO_DISMISS_MS = 2800
 
 export function SplashScreen({ onFinish, className }: SplashScreenProps) {
   const [leaving, setLeaving] = useState(false)
@@ -17,7 +18,7 @@ export function SplashScreen({ onFinish, className }: SplashScreenProps) {
     if (dismissedRef.current) return
     dismissedRef.current = true
     setLeaving(true)
-    window.setTimeout(onFinish, 320)
+    window.setTimeout(onFinish, 360)
   }, [onFinish])
 
   useEffect(() => {
@@ -29,35 +30,49 @@ export function SplashScreen({ onFinish, className }: SplashScreenProps) {
     <motion.div
       role="dialog"
       aria-modal
-      aria-label="Welcome"
+      aria-label="nje is opening"
       className={cn(
-        'fixed inset-0 z-50 flex items-center justify-center bg-nje-bg/96 p-4 backdrop-blur-[2px]',
+        'fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-[#f5d9a6] p-6',
         className,
       )}
       initial={{ opacity: 1 }}
       animate={{ opacity: leaving ? 0 : 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
     >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.14]"
+        style={{
+          backgroundImage: `
+            linear-gradient(90deg, rgba(90, 46, 30, 0.09) 1px, transparent 1px),
+            linear-gradient(rgba(90, 46, 30, 0.09) 1px, transparent 1px)
+          `,
+          backgroundSize: '14px 14px',
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,rgba(242,193,78,0.35),transparent_62%)]"
+      />
       <motion.button
         type="button"
         onClick={dismiss}
         className={cn(
-          'w-full max-w-sm border-[3px] border-nje-border bg-nje-surface px-6 py-8 text-left shadow-[var(--shadow-nje-flat)] outline-none',
-          'transition-shadow duration-200 hover:shadow-[6px_6px_0_0_rgba(90,46,30,0.22)]',
+          'relative z-[1] w-full max-w-md border-[3px] border-nje-border bg-nje-surface/95 px-6 py-10 text-center shadow-[var(--shadow-nje-flat)] outline-none backdrop-blur-[2px]',
+          'transition-shadow duration-200 hover:shadow-[6px_6px_0_0_rgba(90,46,30,0.2)]',
           'focus-visible:ring-2 focus-visible:ring-nje-border focus-visible:ring-offset-2 focus-visible:ring-offset-nje-bg',
         )}
-        initial={{ y: 12, opacity: 0 }}
+        initial={{ y: 14, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
       >
-        <p className="text-xs font-bold uppercase tracking-[0.25em] text-nje-muted">Welcome</p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-nje-border sm:text-4xl">nje</h1>
-        <p className="mt-2 text-sm font-medium leading-relaxed text-nje-border/90 sm:text-base">
-          njenjenje
-        </p>
-        <p className="mt-6 border-t-[3px] border-nje-border pt-4 text-xs font-semibold uppercase tracking-widest text-nje-muted">
-          Tap to continue
+        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-nje-muted">Opening</p>
+        <div className="mt-6">
+          <TypingSplashAnimation />
+        </div>
+        <p className="mt-8 border-t-[3px] border-nje-border/80 pt-5 text-[10px] font-semibold uppercase tracking-[0.2em] text-nje-muted">
+          Tap anywhere to enter
         </p>
       </motion.button>
     </motion.div>

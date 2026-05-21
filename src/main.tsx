@@ -24,6 +24,8 @@ void (async () => {
     return
   }
   const { App } = await import('./app/App')
+  const { initPwaRegistration } = await import('./pwa/registerPwa')
+  initPwaRegistration()
   createRoot(el).render(
     <StrictMode>
       <App />

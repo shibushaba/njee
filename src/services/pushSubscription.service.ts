@@ -13,6 +13,11 @@ export async function getPushSubscriptionJson(): Promise<PushSubscriptionJSON | 
 export async function registerServiceWorkerForPush(): Promise<ServiceWorkerRegistration | null> {
   if (!supportsServiceWorkerPush()) return null
   try {
+    const existing = await navigator.serviceWorker.getRegistration()
+    if (existing) {
+      await existing.update()
+      return existing
+    }
     return await navigator.serviceWorker.register(SW_PATH, { scope: '/' })
   } catch {
     return null
