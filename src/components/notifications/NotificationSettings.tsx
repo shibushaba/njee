@@ -198,10 +198,24 @@ export function NotificationSettings() {
           />
           <ToggleRow
             label="Time capsules"
-            description="Reserved for when that feature arrives."
+            description="When a vault item is sealed for you, and when one unlocks."
             checked={p?.notify_time_capsule ?? true}
             disabled={busy}
             onChange={(v) => void patch({ notify_time_capsule: v })}
+          />
+          <ToggleRow
+            label="Pinned moments"
+            description="When they pin something to your shared shelf."
+            checked={p?.notify_pinned_moment ?? true}
+            disabled={busy}
+            onChange={(v) => void patch({ notify_pinned_moment: v })}
+          />
+          <ToggleRow
+            label="Watch suggestions"
+            description="New picks, updates, and when they start or finish watching."
+            checked={p?.notify_watch_shelf ?? true}
+            disabled={busy}
+            onChange={(v) => void patch({ notify_watch_shelf: v })}
           />
           <ToggleRow
             label="Shared collections"

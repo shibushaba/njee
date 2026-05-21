@@ -5,6 +5,8 @@ export type NotificationKind =
   | 'time_capsule'
   | 'shared_collection'
   | 'presence'
+  | 'pinned_moment'
+  | 'watch_shelf'
 
 export type NotificationRow = {
   id: string
@@ -27,6 +29,8 @@ export type NotificationPreferencesRow = {
   notify_time_capsule: boolean
   notify_shared_collection: boolean
   notify_presence: boolean
+  notify_pinned_moment: boolean
+  notify_watch_shelf: boolean
   browser_push: boolean
   updated_at: string
 }

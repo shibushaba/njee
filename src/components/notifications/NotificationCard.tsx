@@ -1,4 +1,4 @@
-import { MessageSquare, ImageIcon, Flame, Gift, FolderHeart, Circle } from 'lucide-react'
+import { MessageSquare, ImageIcon, Flame, Gift, FolderHeart, Circle, Pin, Clapperboard } from 'lucide-react'
 import type { NotificationRow } from '../../types/notification'
 import { cn } from '../../lib/cn'
 import { formatNotificationTime, notificationKindLabel } from '../../utils/notificationDisplay'
@@ -10,6 +10,8 @@ const ICONS = {
   time_capsule: Gift,
   shared_collection: FolderHeart,
   presence: Circle,
+  pinned_moment: Pin,
+  watch_shelf: Clapperboard,
 } as const
 
 type NotificationCardProps = {

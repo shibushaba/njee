@@ -18,7 +18,9 @@
 16. Run `migrations/016_time_capsules_unlock_notify.sql` for the **`time_capsules`** unlock trigger (soft **`notifications`** rows for sender + receiver when **`is_unlocked`** becomes true; respects **`notification_preferences.notify_time_capsule`**).
 17. Run `migrations/017_watch_suggestion_portal.sql` to evolve **`watch_items`** into the **two-way suggestion portal** (`recipient_id`, **`suggest_stars`**, **`priority`**, **`abi`**, **`stars_watch`**, **`watched_at`**, statuses **`suggested` / `watching` / `watched`**) and replace the insert policy so each row is a suggestion **from** `added_by` **to** `recipient_id`.
 18. Run `migrations/018_watch_items_portal_idempotent.sql` **if** you still see **`Could not find the 'priority' column of 'watch_items' in the schema cache`** (or similar) after deploying the app: it re-applies the same portal columns, checks, and insert policy in an **idempotent** way (safe if **017** was never applied, only partly applied, or you need a clean re-run). After it succeeds, wait a minute or use **Dashboard → Settings → API → Restart project** (or run `notify pgrst, 'reload schema';` as a privileged role) so PostgREST picks up the new columns.
-19. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
+19. Run `migrations/019_watch_pinned_capsule_notify.sql` for **inbox notifications** on **pinned moments**, **watch shelf** (new suggestions + progress + edits), and **new time capsules** (receiver ping when a vault item is created). Adds **`notify_pinned_moment`** and **`notify_watch_shelf`** on **`notification_preferences`** and extends **`notifications.kind`**. Prefer running after **017/018** so watch triggers can use **`recipient_id`**.
+20. Run `migrations/020_message_notification_title.sql` so new **text** notifications use the title **"A new message"** (replaces **"A new note"** in the DB trigger). The app inbox chip for `message` kind reads **MSG** after you deploy the matching frontend build.
+21. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
 
 ```sql
 insert into public.profiles (id, username)

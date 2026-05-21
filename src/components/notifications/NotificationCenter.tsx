@@ -32,6 +32,12 @@ export function NotificationCenter({
       navigate('/chat')
     } else if (row.kind === 'streak') {
       navigate('/ritual')
+    } else if (row.kind === 'pinned_moment') {
+      navigate('/moments')
+    } else if (row.kind === 'watch_shelf') {
+      navigate('/lounge/watch')
+    } else if (row.kind === 'time_capsule') {
+      navigate('/lounge/capsules')
     }
     onClose()
   }

@@ -156,6 +156,8 @@ export function useNotifications(options?: UseNotificationsOptions) {
       notify_time_capsule: prefs.notify_time_capsule,
       notify_shared_collection: prefs.notify_shared_collection,
       notify_presence: prefs.notify_presence,
+      notify_pinned_moment: prefs.notify_pinned_moment,
+      notify_watch_shelf: prefs.notify_watch_shelf,
       browser_push: prefs.browser_push,
     }
   }, [prefs])

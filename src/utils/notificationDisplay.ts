@@ -1,12 +1,14 @@
 import type { NotificationKind } from '../types/notification'
 
 const KIND_LABEL: Record<NotificationKind, string> = {
-  message: 'Note',
+  message: 'Msg',
   media: 'Moment',
   streak: 'Ritual',
   time_capsule: 'Capsule',
   shared_collection: 'Collection',
   presence: 'Presence',
+  pinned_moment: 'Pin',
+  watch_shelf: 'Watch',
 }
 
 export function notificationKindLabel(kind: NotificationKind): string {
@@ -41,6 +43,8 @@ export function kindAllowsBrowserPush(
     notify_time_capsule: boolean
     notify_shared_collection: boolean
     notify_presence: boolean
+    notify_pinned_moment: boolean
+    notify_watch_shelf: boolean
   },
 ): boolean {
   switch (kind) {
@@ -56,6 +60,10 @@ export function kindAllowsBrowserPush(
       return prefs.notify_shared_collection
     case 'presence':
       return prefs.notify_presence
+    case 'pinned_moment':
+      return prefs.notify_pinned_moment
+    case 'watch_shelf':
+      return prefs.notify_watch_shelf
     default:
       return true
   }

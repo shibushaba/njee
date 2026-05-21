@@ -69,9 +69,16 @@ export function MessageInput({
 
   function pushTypingFromValue(next: string) {
     const active = next.trim().length > 0
-    if (active === typingActiveRef.current) return
-    typingActiveRef.current = active
-    onTypingActivity?.(active)
+    if (active) {
+      // Heartbeat while composing so the peer's debounce keeps resetting (not only on first character).
+      typingActiveRef.current = true
+      onTypingActivity?.(true)
+      return
+    }
+    if (typingActiveRef.current) {
+      typingActiveRef.current = false
+      onTypingActivity?.(false)
+    }
   }
 
   function clearPending() {

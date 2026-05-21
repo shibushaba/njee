@@ -40,6 +40,8 @@ function prefsAllowWebPush(kind: string, row: Record<string, unknown> | null): b
     time_capsule: 'notify_time_capsule',
     shared_collection: 'notify_shared_collection',
     presence: 'notify_presence',
+    pinned_moment: 'notify_pinned_moment',
+    watch_shelf: 'notify_watch_shelf',
   }
   const key = col[kind] ?? 'notify_message'
   const v = row[key]
@@ -103,10 +105,21 @@ Deno.serve(async (req) => {
 
   webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate)
 
+  const url =
+    record.kind === 'streak'
+      ? '/ritual'
+      : record.kind === 'pinned_moment'
+        ? '/moments'
+        : record.kind === 'watch_shelf'
+          ? '/lounge/watch'
+          : record.kind === 'time_capsule'
+            ? '/lounge/capsules'
+            : '/chat'
+
   const payload = JSON.stringify({
     title: record.title || 'nje',
     body: (record.body || '').slice(0, 200),
-    url: record.kind === 'streak' ? '/ritual' : '/chat',
+    url,
   })
 
   let sent = 0

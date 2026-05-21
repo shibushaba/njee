@@ -13,6 +13,8 @@ const NOTIFICATION_KINDS: NotificationKind[] = [
   'time_capsule',
   'shared_collection',
   'presence',
+  'pinned_moment',
+  'watch_shelf',
 ]
 
 function isNotificationKind(s: string): s is NotificationKind {
@@ -44,6 +46,8 @@ function normalizePrefs(row: Record<string, unknown>): NotificationPreferencesRo
     notify_time_capsule: Boolean(row.notify_time_capsule ?? true),
     notify_shared_collection: Boolean(row.notify_shared_collection ?? true),
     notify_presence: Boolean(row.notify_presence ?? false),
+    notify_pinned_moment: Boolean(row.notify_pinned_moment ?? true),
+    notify_watch_shelf: Boolean(row.notify_watch_shelf ?? true),
     browser_push: Boolean(row.browser_push ?? false),
     updated_at: String(row.updated_at ?? ''),
   }
@@ -59,6 +63,8 @@ export const defaultNotificationPreferences = (): Omit<
   notify_time_capsule: true,
   notify_shared_collection: true,
   notify_presence: false,
+  notify_pinned_moment: true,
+  notify_watch_shelf: true,
   browser_push: false,
 })
 
@@ -136,6 +142,8 @@ export async function upsertNotificationPreferences(
     notify_shared_collection:
       patch.notify_shared_collection ?? e?.notify_shared_collection ?? d.notify_shared_collection,
     notify_presence: patch.notify_presence ?? e?.notify_presence ?? d.notify_presence,
+    notify_pinned_moment: patch.notify_pinned_moment ?? e?.notify_pinned_moment ?? d.notify_pinned_moment,
+    notify_watch_shelf: patch.notify_watch_shelf ?? e?.notify_watch_shelf ?? d.notify_watch_shelf,
     browser_push: patch.browser_push ?? e?.browser_push ?? d.browser_push,
     updated_at: new Date().toISOString(),
   }

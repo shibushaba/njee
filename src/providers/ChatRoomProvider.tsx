@@ -286,13 +286,14 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
           event: 'typing',
           payload: { userId: currentId, active: true },
         })
+        // Idle window after last keystroke / heartbeat — reset on every `notifyTyping(true)`.
         typingOffTimerRef.current = window.setTimeout(() => {
           void ch.send({
             type: 'broadcast',
             event: 'typing',
             payload: { userId: currentId, active: false },
           })
-        }, 1600)
+        }, 2800)
       } else {
         window.clearTimeout(typingOffTimerRef.current)
         void ch.send({
