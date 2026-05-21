@@ -3,6 +3,9 @@ import { cn } from '../../lib/cn'
 import { TAB_NAV } from './navConfig'
 
 function tabIsActive(path: string, end: boolean | undefined, pathname: string) {
+  if (path === '/lounge') {
+    return pathname === '/lounge' || pathname.startsWith('/lounge/')
+  }
   if (path === '/settings') {
     return pathname === '/settings' || pathname.startsWith('/settings/')
   }

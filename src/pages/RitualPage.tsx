@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { PresenceStatusCard } from '../components/presence/PresenceStatusCard'
 import { MilestonePopup } from '../components/streak/MilestonePopup'
 import { StreakCard } from '../components/streak/StreakCard'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -19,7 +20,10 @@ export function RitualPage() {
       {!peerReady ? (
         <p className="text-sm text-nje-muted">Connect your thread in chat first — the ritual needs two profiles.</p>
       ) : (
-        <StreakCard row={streak.row} loading={streak.loading} className="shadow-[var(--shadow-nje-flat-sm)]" />
+        <>
+          <StreakCard row={streak.row} loading={streak.loading} className="shadow-[var(--shadow-nje-flat-sm)]" />
+          <PresenceStatusCard className="mt-stack-lg" />
+        </>
       )}
       <NavLink
         to="/chat"

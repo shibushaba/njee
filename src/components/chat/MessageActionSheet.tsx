@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom'
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CornerUpLeft, Trash2 } from 'lucide-react'
+import { CornerUpLeft, Pin, Trash2 } from 'lucide-react'
 
 type MessageActionSheetProps = {
   open: boolean
@@ -9,9 +9,22 @@ type MessageActionSheetProps = {
   onClose: () => void
   onReply: () => void
   onDelete: () => void | Promise<void>
+  /** Long-press / menu: save to shared pinned moments (chat + memories). */
+  showPin?: boolean
+  isPinned?: boolean
+  onPin?: () => void | Promise<void>
 }
 
-export function MessageActionSheet({ open, isOwn, onClose, onReply, onDelete }: MessageActionSheetProps) {
+export function MessageActionSheet({
+  open,
+  isOwn,
+  onClose,
+  onReply,
+  onDelete,
+  showPin = false,
+  isPinned = false,
+  onPin,
+}: MessageActionSheetProps) {
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
@@ -58,6 +71,24 @@ export function MessageActionSheet({ open, isOwn, onClose, onReply, onDelete }: 
                 <CornerUpLeft className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
                 Reply
               </button>
+              {showPin ? (
+                isPinned ? (
+                  <div className="border-b-[2px] border-nje-border px-4 py-3 text-xs leading-relaxed text-nje-muted">
+                    Already resting on your shared shelf.
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void onPin?.()
+                    }}
+                    className="flex w-full items-center gap-3 border-b-[2px] border-nje-border px-4 py-3.5 text-left text-sm font-semibold text-nje-border transition-colors hover:bg-nje-bg/80"
+                  >
+                    <Pin className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
+                    Pin to moments
+                  </button>
+                )
+              ) : null}
               {isOwn ? (
                 <button
                   type="button"

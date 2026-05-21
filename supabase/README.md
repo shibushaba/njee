@@ -10,7 +10,13 @@
 8. Run `migrations/008_daily_streaks.sql` for **`daily_streaks`**, **`refresh_daily_streak`**, message triggers, and **realtime** on the streak row (shared daily ritual counter for two users). If you see **`column "user_a" does not exist`**, you likely had an older `daily_streaks` table with a different shape — re-run the full migration file (it drops and recreates that table; streak rows are rebuilt from **`messages`** by the script at the end).
 9. Run `migrations/009_notifications.sql` for **`notifications`**, **`notification_preferences`**, message + streak triggers, and **realtime** on both tables. **`notifications.ref_message_id`** is created as the same type as **`messages.id`** (uuid or bigint, matching migration **005**).
 10. Run `migrations/010_push_subscriptions.sql` for **`push_subscriptions`** (Web Push device rows; RLS for authenticated users).
-11. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
+11. Run `migrations/011_profiles_presence.sql` for **ambient presence** on **`profiles`** (`presence_status`, `presence_updated_at`, `presence_auto_night` legacy column, `presence_idle_auto`) and **realtime** on **`profiles`** (live status sync). If the table is already in the publication, the migration skips the duplicate safely.
+12. Run `migrations/012_presence_four_states.sql` to **narrow `presence_status`** to four values — **`active_now`**, **`sleeping`**, **`studying`**, **`away`** — and remap older states. Always run this after **011** so the app and database stay aligned.
+13. Run `migrations/013_pinned_moments.sql` for **`pinned_moments`** (shared shelf: `message_id` type **matches `messages.id`** — uuid or bigint — plus `pair_key`, `pinned_by`, optional `context_label`) and **realtime** on that table. Re-run safe if a previous attempt failed (script drops and recreates the table).
+14. Run `migrations/014_time_capsules.sql` for **`time_capsules`** (future-unlock messages: `unlock_at`, `is_unlocked`, `capsule_type`, `capsule_title`, optional `media_url` / `media_type`, `context_label`) and **realtime** on that table.
+15. Run `migrations/015_shared_watch.sql` for **`watch_items`** (shared watchlist: `status`, `source_type`, `url`, `title`, `notes`, `context_label`) and **realtime** on that table.
+16. Run `migrations/016_time_capsules_unlock_notify.sql` for the **`time_capsules`** unlock trigger (soft **`notifications`** rows for sender + receiver when **`is_unlocked`** becomes true; respects **`notification_preferences.notify_time_capsule`**).
+17. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
 
 ```sql
 insert into public.profiles (id, username)

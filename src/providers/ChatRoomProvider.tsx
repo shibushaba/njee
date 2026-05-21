@@ -18,6 +18,9 @@ import {
 import { classifyMediaFile } from '../services/media.service'
 import { driveAddAnyoneReaderPermission, driveUploadMultipart } from '../services/googleDrive/driveApi'
 import type { MessageRow } from '../types/message'
+import type { PresenceStatusId } from '../types/presenceStatus'
+import { isPresenceStatusId } from '../types/presenceStatus'
+import { fetchProfilePresence, updateMyPresence } from '../services/presenceStatus.service'
 import { GDRIVE_MEDIA_PREFIX } from '../utils/gdriveMediaUrl'
 import type { ReplyInsertMeta } from '../utils/messageReply'
 import { viewLimitFromSendMode, type MediaSendViewMode } from '../utils/mediaViewMode'
@@ -35,6 +38,15 @@ function readPeerOnline(channel: RealtimeChannel, peerId: string | null) {
   if (direct && direct.length > 0) return true
   const flat = Object.values(state).flat() as { user_id?: string }[]
   return flat.some((p) => p?.user_id === peerId)
+}
+
+function readPeerPresenceFromChannel(channel: RealtimeChannel, peerId: string | null): PresenceStatusId | null {
+  if (!peerId) return null
+  const state = channel.presenceState() as Record<string, { user_id?: string; presence_status?: string }[]>
+  const flat = Object.values(state).flat() as { user_id?: string; presence_status?: string }[]
+  const hit = flat.find((p) => p?.user_id === peerId && p.presence_status)
+  if (hit?.presence_status && isPresenceStatusId(hit.presence_status)) return hit.presence_status
+  return null
 }
 
 export function ChatRoomProvider({ children }: ChatRoomProviderProps) {
@@ -60,9 +72,13 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
   const [peerOnline, setPeerOnline] = useState(false)
   const [peerTyping, setPeerTyping] = useState(false)
   const [roomConnected, setRoomConnected] = useState(false)
+  const [myPresenceStatus, setMyPresenceStatus] = useState<PresenceStatusId>('active_now')
+  const [peerPresenceDb, setPeerPresenceDb] = useState<PresenceStatusId>('active_now')
+  const [peerPresenceLive, setPeerPresenceLive] = useState<PresenceStatusId | null>(null)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
   const typingOffTimerRef = useRef<number>(0)
+  const myPresenceStatusRef = useRef<PresenceStatusId>('active_now')
 
   const load = useCallback(async () => {
     if (!currentId) {
@@ -70,6 +86,8 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
       setPeerId(null)
       setPeerUsername(null)
       setMessages([])
+      setPeerPresenceLive(null)
+      setPeerPresenceDb('active_now')
       return
     }
 
@@ -87,6 +105,8 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
       setPeerId(null)
       setPeerUsername(null)
       setMessages([])
+      setPeerPresenceLive(null)
+      setPeerPresenceDb('active_now')
       setLoading(false)
       return
     }
@@ -108,8 +128,34 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
   }, [currentId])
 
   useEffect(() => {
+    myPresenceStatusRef.current = myPresenceStatus
+  }, [myPresenceStatus])
+
+  useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    if (!currentId || !peerId) return
+
+    let cancelled = false
+
+    void (async () => {
+      const [mine, theirs] = await Promise.all([fetchProfilePresence(currentId), fetchProfilePresence(peerId)])
+      if (cancelled) return
+      if (mine.data) {
+        setMyPresenceStatus(mine.data.presence_status)
+        myPresenceStatusRef.current = mine.data.presence_status
+      }
+      if (theirs.data) {
+        setPeerPresenceDb(theirs.data.presence_status)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentId, peerId])
 
   useEffect(() => {
     if (!currentId || !peerId) return
@@ -127,12 +173,41 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
 
     const syncPresence = () => {
       setPeerOnline(readPeerOnline(channel, peerId))
+      setPeerPresenceLive(readPeerPresenceFromChannel(channel, peerId))
+    }
+
+    const onProfilePresence = (payload: { new: Record<string, unknown> }) => {
+      const row = payload.new
+      const id = String(row.id ?? '')
+      const raw = row.presence_status
+      const next: PresenceStatusId =
+        typeof raw === 'string' && isPresenceStatusId(raw) ? raw : 'active_now'
+      if (id === peerId) {
+        setPeerPresenceDb(next)
+      }
+      if (id === currentId) {
+        setMyPresenceStatus(next)
+        myPresenceStatusRef.current = next
+        void channel.track({
+          user_id: currentId,
+          username: myUsername ?? 'member',
+          presence_status: next,
+        })
+      }
     }
 
     channel
       .on('presence', { event: 'sync' }, syncPresence)
       .on('presence', { event: 'join' }, syncPresence)
       .on('presence', { event: 'leave' }, syncPresence)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${peerId}` }, (p) =>
+        onProfilePresence({ new: p.new as Record<string, unknown> }),
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${currentId}` },
+        (p) => onProfilePresence({ new: p.new as Record<string, unknown> }),
+      )
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
         const p = payload as { userId?: string; active?: boolean }
         if (p.userId === peerId) {
@@ -183,6 +258,7 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
           await channel.track({
             user_id: currentId,
             username: myUsername ?? 'member',
+            presence_status: myPresenceStatusRef.current,
           })
           syncPresence()
         }
@@ -193,6 +269,7 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
       channelRef.current = null
       setRoomConnected(false)
       setPeerTyping(false)
+      setPeerPresenceLive(null)
       void supabase.removeChannel(channel)
     }
   }, [currentId, peerId, myUsername])
@@ -360,6 +437,32 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
     [currentId],
   )
 
+  const setPresenceStatus = useCallback(
+    async (status: PresenceStatusId): Promise<{ error: string | null }> => {
+      if (!currentId) {
+        return { error: 'Chat is not ready yet.' }
+      }
+      const res = await updateMyPresence(currentId, status)
+      if (res.error) {
+        return { error: res.error }
+      }
+      myPresenceStatusRef.current = status
+      setMyPresenceStatus(status)
+      const ch = channelRef.current
+      if (ch) {
+        await ch.track({
+          user_id: currentId,
+          username: myUsername ?? 'member',
+          presence_status: status,
+        })
+      }
+      return { error: null }
+    },
+    [currentId, myUsername],
+  )
+
+  const peerPresenceStatus: PresenceStatusId = peerId ? (peerPresenceLive ?? peerPresenceDb) : 'active_now'
+
   const value = useMemo<ChatRoomContextValue>(
     () => ({
       messages,
@@ -373,6 +476,9 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
       peerOnline,
       peerTyping,
       roomConnected,
+      peerPresenceStatus,
+      myPresenceStatus,
+      setPresenceStatus,
       sendMessage,
       sendMedia,
       deleteMessage,
@@ -387,13 +493,16 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
       loading,
       messages,
       myUsername,
+      myPresenceStatus,
       peerId,
       peerOnline,
+      peerPresenceStatus,
       peerTyping,
       peerUsername,
       roomConnected,
       sendMessage,
       sendMedia,
+      setPresenceStatus,
       notifyTyping,
       patchMessage,
       sending,

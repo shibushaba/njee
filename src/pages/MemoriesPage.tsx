@@ -8,6 +8,7 @@ import { MessageActionSheet } from '../components/chat/MessageActionSheet'
 import { MessageInput } from '../components/chat/MessageInput'
 import { MessageList } from '../components/chat/MessageList'
 import { useChatRoom } from '../context/chat-room-context'
+import { usePinnedMoments } from '../hooks/usePinnedMoments'
 import { purgeDriveMemoryAfterLock } from '../services/media.service'
 import { useGoogleDrive } from '../providers/GoogleDriveProvider'
 import type { MessageRow } from '../types/message'
@@ -35,8 +36,10 @@ export function MemoriesPage() {
     patchMessage,
     reload,
     peerId,
+    myPresenceStatus,
   } = useChatRoom()
 
+  const pinned = usePinnedMoments(currentId, peerId, myPresenceStatus)
   const gd = useGoogleDrive()
   const googleConfigured = Boolean(readGoogleClientId() && readDriveRootFolderId())
   const peerReady = Boolean(peerId)
@@ -199,6 +202,13 @@ export function MemoriesPage() {
             setSheetMessage(null)
           }}
           onDelete={handleDeleteFromSheet}
+          showPin={peerReady}
+          isPinned={pinned.pinnedMessageIds.has(sheetMessage.id)}
+          onPin={async () => {
+            const r = await pinned.pinMessage(sheetMessage)
+            if (r.error) window.alert(r.error)
+            else setSheetMessage(null)
+          }}
         />
       ) : null}
     </div>

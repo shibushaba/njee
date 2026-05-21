@@ -5,8 +5,10 @@ import { ChatHeader } from '../components/chat/ChatHeader'
 import { MessageActionSheet } from '../components/chat/MessageActionSheet'
 import { MessageInput } from '../components/chat/MessageInput'
 import { MessageList } from '../components/chat/MessageList'
-import { PresenceBar } from '../components/chat/PresenceBar'
+import { AmbientPresenceBar } from '../components/presence/AmbientPresenceBar'
 import { useChatRoom } from '../context/chat-room-context'
+import { useMessagingChrome } from '../context/messaging-chrome-context'
+import { usePinnedMoments } from '../hooks/usePinnedMoments'
 import { useStreak } from '../hooks/useStreak'
 import type { MessageRow } from '../types/message'
 import { buildReplyInsertMeta } from '../utils/messageReply'
@@ -15,6 +17,8 @@ export function ChatPage() {
   const [composerTyping, setComposerTyping] = useState(false)
   const [replyTo, setReplyTo] = useState<MessageRow | null>(null)
   const [sheetMessage, setSheetMessage] = useState<MessageRow | null>(null)
+
+  const messaging = useMessagingChrome()
 
   const {
     messages,
@@ -31,9 +35,13 @@ export function ChatPage() {
     sendMessage,
     deleteMessage,
     notifyTyping,
+    peerPresenceStatus,
+    myPresenceStatus,
+    setPresenceStatus,
   } = useChatRoom()
 
   const streak = useStreak(currentId, peerId)
+  const pinned = usePinnedMoments(currentId, peerId, myPresenceStatus)
 
   const textMessages = useMemo(() => messages.filter((m) => m.message_type === 'text'), [messages])
 
@@ -76,9 +84,10 @@ export function ChatPage() {
             ritualStreak={
               peerReady ? { count: streak.row?.current_streak ?? 0, loading: streak.loading } : undefined
             }
+            inlineNotifications={messaging?.chatInlineNotifications}
             className="border-b-0 shadow-none"
           />
-          <PresenceBar
+          <AmbientPresenceBar
             myUsername={myUsername}
             peerUsername={peerUsername}
             peerOnline={peerOnline}
@@ -86,6 +95,9 @@ export function ChatPage() {
             peerTyping={peerTyping}
             myTyping={composerTyping}
             peerReady={peerReady}
+            myPresenceStatus={myPresenceStatus}
+            peerPresenceStatus={peerPresenceStatus}
+            setPresenceStatus={setPresenceStatus}
             className="border-b-0 shadow-none"
           />
         </div>
@@ -149,6 +161,13 @@ export function ChatPage() {
             setSheetMessage(null)
           }}
           onDelete={handleDeleteFromSheet}
+          showPin={peerReady}
+          isPinned={pinned.pinnedMessageIds.has(sheetMessage.id)}
+          onPin={async () => {
+            const r = await pinned.pinMessage(sheetMessage)
+            if (r.error) window.alert(r.error)
+            else setSheetMessage(null)
+          }}
         />
       ) : null}
     </div>

@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { MessageRow } from '../types/message'
+import type { PresenceStatusId } from '../types/presenceStatus'
 import type { ReplyInsertMeta } from '../utils/messageReply'
 import type { MediaSendViewMode } from '../utils/mediaViewMode'
 
@@ -15,6 +16,10 @@ export type ChatRoomContextValue = {
   peerOnline: boolean
   peerTyping: boolean
   roomConnected: boolean
+  /** Resolved peer ambient status (live presence when online, else DB). */
+  peerPresenceStatus: PresenceStatusId
+  myPresenceStatus: PresenceStatusId
+  setPresenceStatus: (status: PresenceStatusId) => Promise<{ error: string | null }>
   sendMessage: (text: string, opts?: { reply?: ReplyInsertMeta | null }) => Promise<{ error: string | null }>
   sendMedia: (
     file: File,

@@ -22,11 +22,17 @@ export function MobileAppShell() {
     markRead,
     markAllRead,
   } = useNotificationHub()
-  const messagingChrome = useMemo(
-    () => ({ composerFocused, setComposerFocused }),
-    [composerFocused],
-  )
   const isChatRoute = location.pathname === '/chat'
+  const messagingChrome = useMemo(
+    () => ({
+      composerFocused,
+      setComposerFocused,
+      chatInlineNotifications: isChatRoute
+        ? { open: () => setNotifyOpen(true), unreadCount: unreadCount }
+        : undefined,
+    }),
+    [composerFocused, isChatRoute, unreadCount],
+  )
   const isMemoriesRoute = location.pathname === '/memories'
   const fullBleedRoute = isChatRoute || isMemoriesRoute
   const hideBottomNav =
@@ -51,19 +57,21 @@ export function MobileAppShell() {
   return (
     <MessagingChromeContext.Provider value={messagingChrome}>
       <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-nje-bg">
-        <div className="pointer-events-none fixed inset-x-0 top-0 z-[120] flex justify-center px-gutter pt-[max(env(safe-area-inset-top),0.35rem)]">
-          <div className="pointer-events-auto flex w-full max-w-lg justify-end sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
-            <button
-              type="button"
-              aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
-              onClick={() => setNotifyOpen(true)}
-              className="relative flex h-10 w-10 items-center justify-center border-[2px] border-nje-border bg-nje-surface shadow-[0_2px_0_0_rgba(90,46,30,0.08)] transition-shadow hover:shadow-[0_3px_0_0_rgba(90,46,30,0.1)] motion-safe:active:translate-y-px"
-            >
-              <Bell className="h-[1.15rem] w-[1.15rem] text-nje-border" strokeWidth={2.25} />
-              <NotificationBadge count={unreadCount} />
-            </button>
+        {!isChatRoute ? (
+          <div className="pointer-events-none fixed inset-x-0 top-0 z-[120] flex justify-center px-gutter pt-[max(env(safe-area-inset-top),0.35rem)]">
+            <div className="pointer-events-auto flex w-full max-w-lg justify-end sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
+              <button
+                type="button"
+                aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+                onClick={() => setNotifyOpen(true)}
+                className="relative flex h-10 w-10 items-center justify-center border-[2px] border-nje-border bg-nje-surface shadow-[0_2px_0_0_rgba(90,46,30,0.08)] transition-shadow hover:shadow-[0_3px_0_0_rgba(90,46,30,0.1)] motion-safe:active:translate-y-px"
+              >
+                <Bell className="h-[1.15rem] w-[1.15rem] text-nje-border" strokeWidth={2.25} />
+                <NotificationBadge count={unreadCount} />
+              </button>
+            </div>
           </div>
-        </div>
+        ) : null}
         <NotificationCenter
           open={notifyOpen}
           onClose={() => setNotifyOpen(false)}
@@ -86,7 +94,10 @@ export function MobileAppShell() {
             className={cn(
               'mx-auto w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl',
               fullBleedRoute
-                ? 'flex min-h-0 flex-1 flex-col px-gutter pt-11 sm:px-gutter-sm sm:pt-12 md:px-gutter-md lg:px-gutter-lg'
+                ? cn(
+                    'flex min-h-0 flex-1 flex-col px-gutter sm:px-gutter-sm md:px-gutter-md lg:px-gutter-lg',
+                    isChatRoute ? 'pt-[max(env(safe-area-inset-top),0.35rem)] sm:pt-1' : 'pt-11 sm:pt-12',
+                  )
                 : 'px-gutter pb-gutter-md pt-11 sm:px-gutter-sm sm:pb-gutter-lg sm:pt-12 md:px-gutter-md lg:px-gutter-lg',
             )}
           >

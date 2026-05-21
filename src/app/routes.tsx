@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AuthLoadingScreen } from '../components/auth/AuthLoadingScreen'
 import { ProtectedRoute } from '../components/auth/ProtectedRoute'
 import { useAuth } from '../hooks/useAuth'
@@ -23,6 +23,34 @@ const RitualPage = lazy(async () => {
   const m = await import('../pages/RitualPage')
   return { default: m.RitualPage }
 })
+
+const PinnedMomentsPage = lazy(async () => {
+  const m = await import('../pages/PinnedMomentsPage')
+  return { default: m.PinnedMomentsPage }
+})
+
+const LoungePage = lazy(async () => {
+  const m = await import('../pages/LoungePage')
+  return { default: m.LoungePage }
+})
+
+const TimeCapsulesPage = lazy(async () => {
+  const m = await import('../pages/TimeCapsulesPage')
+  return { default: m.TimeCapsulesPage }
+})
+
+const WatchSpacePage = lazy(async () => {
+  const m = await import('../pages/WatchSpacePage')
+  return { default: m.WatchSpacePage }
+})
+
+function LoungeShell() {
+  return (
+    <Suspense fallback={<ChatRouteFallback />}>
+      <Outlet />
+    </Suspense>
+  )
+}
 
 function ChatRouteFallback() {
   return (
@@ -64,7 +92,29 @@ export function AppRoutes() {
               </ChatRoomProvider>
             }
           />
+          <Route
+            path="moments"
+            element={
+              <ChatRoomProvider>
+                <Suspense fallback={<ChatRouteFallback />}>
+                  <PinnedMomentsPage />
+                </Suspense>
+              </ChatRoomProvider>
+            }
+          />
           <Route path="mood" element={<MoodPage />} />
+          <Route
+            path="lounge"
+            element={
+              <ChatRoomProvider>
+                <LoungeShell />
+              </ChatRoomProvider>
+            }
+          >
+            <Route index element={<LoungePage />} />
+            <Route path="capsules" element={<TimeCapsulesPage />} />
+            <Route path="watch" element={<WatchSpacePage />} />
+          </Route>
           <Route path="notes" element={<NotesPage />} />
           <Route
             path="ritual"
