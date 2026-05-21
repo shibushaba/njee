@@ -2,6 +2,7 @@ import type { FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Send, X } from 'lucide-react'
+import { useMessagingChrome } from '../../context/messaging-chrome-context'
 import { cn } from '../../lib/cn'
 import type { MessageRow } from '../../types/message'
 import type { MediaSendViewMode } from '../../utils/mediaViewMode'
@@ -41,6 +42,7 @@ export function MessageInput({
   disabled,
   sending,
 }: MessageInputProps) {
+  const messagingChrome = useMessagingChrome()
   const isMemories = variant === 'memories'
   const [value, setValue] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -209,7 +211,9 @@ export function MessageInput({
               setValue(next)
               pushTypingFromValue(next)
             }}
+            onFocus={() => messagingChrome?.setComposerFocused(true)}
             onBlur={() => {
+              messagingChrome?.setComposerFocused(false)
               typingActiveRef.current = false
               onTypingActivity?.(false)
             }}

@@ -6,6 +6,9 @@ type ChatHeaderProps = {
 }
 
 export function ChatHeader({ peerUsername, className }: ChatHeaderProps) {
+  const peer = peerUsername?.trim()
+  const title = peer && peer.length > 0 ? peer : 'Chat'
+
   return (
     <header
       className={cn(
@@ -14,7 +17,7 @@ export function ChatHeader({ peerUsername, className }: ChatHeaderProps) {
       )}
     >
       <h1 className="min-w-0 truncate text-base font-bold leading-tight tracking-tight text-nje-border sm:text-lg">
-        {peerUsername ? peerUsername : 'Chat'}
+        {title}
       </h1>
     </header>
   )

@@ -65,18 +65,20 @@ export function ChatPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 overflow-hidden rounded-sm border-[2px] border-nje-border shadow-[0_2px_0_0_rgba(90,46,30,0.05)]">
-        <ChatHeader peerUsername={peerUsername} className="border-b-0 shadow-none" />
-        <PresenceBar
-          myUsername={myUsername}
-          peerUsername={peerUsername}
-          peerOnline={peerOnline}
-          roomConnected={roomConnected}
-          peerTyping={peerTyping}
-          myTyping={composerTyping}
-          peerReady={peerReady}
-          className="border-b-0 shadow-none"
-        />
+      <div className="sticky top-0 z-30 shrink-0 bg-nje-bg pb-0.5">
+        <div className="overflow-hidden rounded-sm border-[2px] border-nje-border shadow-[0_2px_0_0_rgba(90,46,30,0.05)]">
+          <ChatHeader peerUsername={peerUsername} className="border-b-0 shadow-none" />
+          <PresenceBar
+            myUsername={myUsername}
+            peerUsername={peerUsername}
+            peerOnline={peerOnline}
+            roomConnected={roomConnected}
+            peerTyping={peerTyping}
+            myTyping={composerTyping}
+            peerReady={peerReady}
+            className="border-b-0 shadow-none"
+          />
+        </div>
       </div>
 
       {error ? (

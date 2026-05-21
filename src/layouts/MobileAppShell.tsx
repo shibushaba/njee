@@ -1,15 +1,28 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { useMemo, useState, useEffect } from 'react'
 import { useLocation, useOutlet } from 'react-router-dom'
 import { BottomNav } from '../components/navigation/BottomNav'
+import { MessagingChromeContext } from '../context/messaging-chrome-context'
 import { cn } from '../lib/cn'
 
 export function MobileAppShell() {
   const outlet = useOutlet()
   const location = useLocation()
   const reduceMotion = useReducedMotion()
+  const [composerFocused, setComposerFocused] = useState(false)
+  const messagingChrome = useMemo(
+    () => ({ composerFocused, setComposerFocused }),
+    [composerFocused],
+  )
   const isChatRoute = location.pathname === '/chat'
-  const fullBleedRoute =
-    isChatRoute || location.pathname === '/memories'
+  const isMemoriesRoute = location.pathname === '/memories'
+  const fullBleedRoute = isChatRoute || isMemoriesRoute
+  const hideBottomNav =
+    composerFocused && (isChatRoute || isMemoriesRoute)
+
+  useEffect(() => {
+    setComposerFocused(false)
+  }, [location.pathname])
 
   const pageTransition = reduceMotion
     ? {
@@ -24,13 +37,14 @@ export function MobileAppShell() {
       }
 
   return (
-    <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-nje-bg">
-      <main
-        className={cn(
-          'min-h-0 flex-1 overflow-x-hidden overscroll-y-contain [scrollbar-gutter:stable]',
-          fullBleedRoute ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
-        )}
-      >
+    <MessagingChromeContext.Provider value={messagingChrome}>
+      <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-nje-bg">
+        <main
+          className={cn(
+            'min-h-0 flex-1 overflow-x-hidden overscroll-y-contain [scrollbar-gutter:stable]',
+            fullBleedRoute ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
+          )}
+        >
         <div
           className={cn(
             'mx-auto w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl',
@@ -56,7 +70,8 @@ export function MobileAppShell() {
           </AnimatePresence>
         </div>
       </main>
-      <BottomNav />
-    </div>
+        {!hideBottomNav ? <BottomNav /> : null}
+      </div>
+    </MessagingChromeContext.Provider>
   )
 }
