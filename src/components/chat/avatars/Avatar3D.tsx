@@ -24,9 +24,9 @@ export function Avatar3D({ variant, isTyping = false, className, size = 'md' }: 
     )
   }, [variant, isTyping])
 
-  const dim = size === 'sm' ? 44 : 56
-  /** Orthographic zoom: lower = wider view (more zoomed out). */
-  const zoom = size === 'sm' ? 68 : 82
+  const dim = size === 'sm' ? 48 : 60
+  /** Orthographic zoom: higher = tighter framing on the mascot (easier to read in the header). */
+  const zoom = size === 'sm' ? 78 : 92
 
   return (
     <div
@@ -38,13 +38,13 @@ export function Avatar3D({ variant, isTyping = false, className, size = 'md' }: 
     >
       <Canvas
         orthographic
-        dpr={[1, 1.35]}
-        gl={{ alpha: true, antialias: false, powerPreference: 'low-power' }}
+        dpr={[1, 2]}
+        gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
         camera={{ position: [0, 0.08, 2.35], zoom, near: 0.1, far: 12 }}
         style={{ width: '100%', height: '100%' }}
       >
-        <ambientLight intensity={0.92} />
-        <directionalLight position={[2.2, 3, 1.8]} intensity={0.42} color="#fff6e8" />
+        <ambientLight intensity={1.02} />
+        <directionalLight position={[2.2, 3.2, 2]} intensity={0.55} color="#fff6e8" />
         <Suspense fallback={null}>
           <Center position={[0, -0.02, 0]}>{Scene}</Center>
         </Suspense>

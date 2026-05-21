@@ -10,7 +10,6 @@ import { ChangePasswordPage } from '../pages/ChangePasswordPage'
 import { LoginPage } from '../pages/LoginPage'
 import { MemoriesPage } from '../pages/MemoriesPage'
 import { MoodPage } from '../pages/MoodPage'
-import { NotesPage } from '../pages/NotesPage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { NotificationSettingsPage } from '../pages/NotificationSettingsPage'
 
@@ -115,7 +114,6 @@ export function AppRoutes() {
             <Route path="capsules" element={<TimeCapsulesPage />} />
             <Route path="watch" element={<WatchSpacePage />} />
           </Route>
-          <Route path="notes" element={<NotesPage />} />
           <Route
             path="ritual"
             element={

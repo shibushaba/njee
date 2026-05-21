@@ -14,7 +14,7 @@ export function PinnedMomentsPage() {
     <div className="flex min-h-0 flex-1 flex-col gap-stack-lg pb-stack-lg">
       <PageHeader
         title="Pinned moments"
-        description="A quiet shelf for what mattered — text, photos, and film from your thread. Shared between you two."
+        description="A shelf for what mattered — text, photos, and film from your thread. Shared between you two."
       />
 
       {!peerReady ? (

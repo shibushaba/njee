@@ -1,20 +1,20 @@
+import type { WatchPortalStatus } from '../../types/watchItem'
 import { cn } from '../../lib/cn'
-import type { WatchStatus } from '../../types/watchItem'
 
-const LABEL: Record<WatchStatus, string> = {
-  watch_later: 'Later',
-  watching: 'Now',
-  favorite: 'Love',
+const LABEL: Record<WatchPortalStatus, string> = {
+  suggested: 'Queued',
+  watching: 'Watching',
+  watched: 'Watched',
 }
 
-const TONE: Record<WatchStatus, string> = {
-  watch_later: 'bg-nje-bg text-nje-muted',
+const TONE: Record<WatchPortalStatus, string> = {
+  suggested: 'bg-nje-bg text-nje-muted',
   watching: 'bg-nje-yellow text-nje-border',
-  favorite: 'bg-nje-pink text-nje-border',
+  watched: 'bg-nje-mint text-nje-border',
 }
 
 type WatchStatusBadgeProps = {
-  status: WatchStatus
+  status: WatchPortalStatus
   className?: string
 }
 

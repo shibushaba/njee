@@ -44,7 +44,7 @@ export function PresenceBar({
     >
       <div className="flex flex-col gap-0 border-r-[2px] border-nje-border px-2 py-2 sm:px-2.5">
         <div className="flex items-start gap-2">
-          <Avatar3D variant={peerVariant} isTyping={peerTyping} size="sm" className="shrink-0 rounded-sm" />
+          <Avatar3D variant={peerVariant} isTyping={peerTyping} size="md" className="shrink-0 rounded-sm" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-bold leading-tight text-nje-border">
               {peerReady ? displayName(peerUsername, '…') : '—'}
@@ -58,7 +58,7 @@ export function PresenceBar({
 
       <div className="flex flex-col gap-0 px-2 py-2 sm:px-2.5">
         <div className="flex items-start gap-2">
-          <Avatar3D variant={meVariant} isTyping={myTyping} size="sm" className="shrink-0 rounded-sm" />
+          <Avatar3D variant={meVariant} isTyping={myTyping} size="md" className="shrink-0 rounded-sm" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-bold leading-tight text-nje-border">{displayName(myUsername, '…')}</p>
             <div className="mt-1">

@@ -176,7 +176,7 @@ export function NotificationSettings() {
         </p>
         <div className="mt-2">
           <ToggleRow
-            label="New notes"
+            label="New messages"
             description="When they send you text."
             checked={p?.notify_message ?? true}
             disabled={busy}

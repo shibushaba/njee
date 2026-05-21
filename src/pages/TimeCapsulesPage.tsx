@@ -33,7 +33,7 @@ export function TimeCapsulesPage() {
       />
 
       {!peerReady ? (
-        <p className="text-sm text-nje-muted">When your quiet room is ready, you can seal capsules together.</p>
+        <p className="text-sm text-nje-muted">When your ready, you can seal capsules.</p>
       ) : (
         <button
           type="button"

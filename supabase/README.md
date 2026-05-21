@@ -16,7 +16,8 @@
 14. Run `migrations/014_time_capsules.sql` for **`time_capsules`** (future-unlock messages: `unlock_at`, `is_unlocked`, `capsule_type`, `capsule_title`, optional `media_url` / `media_type`, `context_label`) and **realtime** on that table.
 15. Run `migrations/015_shared_watch.sql` for **`watch_items`** (shared watchlist: `status`, `source_type`, `url`, `title`, `notes`, `context_label`) and **realtime** on that table.
 16. Run `migrations/016_time_capsules_unlock_notify.sql` for the **`time_capsules`** unlock trigger (soft **`notifications`** rows for sender + receiver when **`is_unlocked`** becomes true; respects **`notification_preferences.notify_time_capsule`**).
-17. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
+17. Run `migrations/017_watch_suggestion_portal.sql` to evolve **`watch_items`** into the **two-way suggestion portal** (`recipient_id`, **`suggest_stars`**, **`priority`**, **`abi`**, **`stars_watch`**, **`watched_at`**, statuses **`suggested` / `watching` / `watched`**) and replace the insert policy so each row is a suggestion **from** `added_by` **to** `recipient_id`.
+18. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
 
 ```sql
 insert into public.profiles (id, username)

@@ -94,7 +94,7 @@ export function AmbientPresenceBar({
                 transitionDuration: peerPresenceStatus === 'sleeping' ? '1100ms' : undefined,
               }}
             >
-              <Avatar3D variant={peerVariant} isTyping={peerTyping} size="sm" className="rounded-sm" />
+              <Avatar3D variant={peerVariant} isTyping={peerTyping} size="md" className="rounded-sm" />
             </motion.div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-bold leading-tight text-nje-border">
@@ -131,7 +131,7 @@ export function AmbientPresenceBar({
                 transitionDuration: myPresenceStatus === 'sleeping' ? '1100ms' : undefined,
               }}
             >
-              <Avatar3D variant={meVariant} isTyping={myTyping} size="sm" className="rounded-sm" />
+              <Avatar3D variant={meVariant} isTyping={myTyping} size="md" className="rounded-sm" />
             </motion.div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-bold leading-tight text-nje-border">{displayName(myUsername, '…')}</p>

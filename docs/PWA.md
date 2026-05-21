@@ -10,7 +10,7 @@ Before `npm run build`, **`prebuild`** runs `scripts/generate-pwa-icons.mjs`, wh
 - `public/pwa-512.png`
 - `public/pwa-maskable-512.png`
 
-**Source image (priority):** save your master art as **`scripts/pwa-icon-source.png`**. The script uses **nearest-neighbor** scaling to keep pixel art crisp.
+**Source image (priority):** save your master art as **`scripts/pwa-icon-source.png`**. The script uses **nearest-neighbor** scaling and **`cover`** so the graphic **fills every pixel** of each square (no cream/yellow padding). If your source file itself has a solid border baked in, crop that in the PNG first.
 
 If that file is missing, the script falls back to rasterizing **`public/favicon.svg`** so CI and fresh clones still build.
 

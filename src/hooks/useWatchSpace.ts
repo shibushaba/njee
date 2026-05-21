@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { chatRoomTopicId } from '../utils/chatTopic'
-import type { PresenceStatusId } from '../types/presenceStatus'
-import type { WatchItemRow, WatchSourceType, WatchStatus } from '../types/watchItem'
-import { deriveWatchContextLabel } from '../utils/watchSpaceContext'
+import type { WatchItemRow, WatchSourceType } from '../types/watchItem'
 import {
   deleteWatchItem,
   fetchWatchItems,
-  insertWatchItem,
+  insertWatchSuggestion,
   subscribeWatchItems,
   updateWatchItem,
 } from '../services/watchSpace.service'
 
-export function useWatchSpace(currentId: string | null, peerId: string | null, myPresenceStatus: PresenceStatusId) {
+export function useWatchSpace(currentId: string | null, peerId: string | null) {
   const pairKey = useMemo(
     () => (currentId && peerId ? chatRoomTopicId(currentId, peerId) : null),
     [currentId, peerId],
@@ -50,35 +48,85 @@ export function useWatchSpace(currentId: string | null, peerId: string | null, m
     return () => sub.unsubscribe()
   }, [pairKey, reload])
 
-  const addItem = useCallback(
+  const stats = useMemo(() => {
+    if (!currentId || !peerId) {
+      return { theyFinishedMine: 0, iFinishedTheirs: 0 }
+    }
+    const theyFinishedMine = rows.filter(
+      (r) => r.added_by === currentId && r.recipient_id === peerId && r.status === 'watched',
+    ).length
+    const iFinishedTheirs = rows.filter(
+      (r) => r.added_by === peerId && r.recipient_id === currentId && r.status === 'watched',
+    ).length
+    return { theyFinishedMine, iFinishedTheirs }
+  }, [rows, currentId, peerId])
+
+  const addSuggestion = useCallback(
     async (opts: {
       url: string
       title: string
       notes?: string | null
-      status: WatchStatus
       sourceType: WatchSourceType
+      suggestStars: number
+      priority: number
     }) => {
-      if (!currentId || !pairKey) return { error: 'Not ready' as const }
-      const ctx = deriveWatchContextLabel(myPresenceStatus)
-      const res = await insertWatchItem({
+      if (!currentId || !peerId || !pairKey) return { error: 'Not ready' as const }
+      const res = await insertWatchSuggestion({
         pairKey,
-        addedBy: currentId,
+        suggesterId: currentId,
+        recipientId: peerId,
         url: opts.url,
         title: opts.title,
         notes: opts.notes,
-        status: opts.status,
         sourceType: opts.sourceType,
-        contextLabel: ctx,
+        suggestStars: opts.suggestStars,
+        priority: opts.priority,
       })
       if (res.error) return { error: res.error }
       await reload()
       return { error: null as string | null }
     },
-    [currentId, pairKey, myPresenceStatus, reload],
+    [currentId, peerId, pairKey, reload],
   )
 
   const patchItem = useCallback(
-    async (id: string, patch: Partial<Pick<WatchItemRow, 'title' | 'notes' | 'status' | 'url' | 'source_type'>>) => {
+    async (id: string, patch: Record<string, unknown>) => {
+      const res = await updateWatchItem(id, patch)
+      if (res.error) return { error: res.error }
+      await reload()
+      return { error: null as string | null }
+    },
+    [reload],
+  )
+
+  const markWatched = useCallback(
+    async (id: string, abi: string, starsWatch: number) => {
+      const t = abi.trim()
+      if (!t) return { error: 'Abi cannot be empty.' as const }
+      const s = Math.min(5, Math.max(1, Math.round(starsWatch)))
+      const res = await updateWatchItem(id, {
+        status: 'watched',
+        abi: t,
+        stars_watch: s,
+        watched_at: new Date().toISOString(),
+      })
+      if (res.error) return { error: res.error }
+      await reload()
+      return { error: null as string | null }
+    },
+    [reload],
+  )
+
+  const setStatus = useCallback(
+    async (id: string, status: 'suggested' | 'watching') => {
+      const patch: Partial<
+        Pick<WatchItemRow, 'status' | 'watched_at' | 'abi' | 'stars_watch'>
+      > = { status }
+      if (status === 'suggested') {
+        patch.watched_at = null
+        patch.abi = null
+        patch.stars_watch = null
+      }
       const res = await updateWatchItem(id, patch)
       if (res.error) return { error: res.error }
       await reload()
@@ -103,8 +151,11 @@ export function useWatchSpace(currentId: string | null, peerId: string | null, m
     error,
     reload,
     pairKey,
-    addItem,
+    stats,
+    addSuggestion,
     patchItem,
+    markWatched,
+    setStatus,
     removeItem,
   }
 }
