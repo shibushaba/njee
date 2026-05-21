@@ -20,7 +20,8 @@
 18. Run `migrations/018_watch_items_portal_idempotent.sql` **if** you still see **`Could not find the 'priority' column of 'watch_items' in the schema cache`** (or similar) after deploying the app: it re-applies the same portal columns, checks, and insert policy in an **idempotent** way (safe if **017** was never applied, only partly applied, or you need a clean re-run). After it succeeds, wait a minute or use **Dashboard → Settings → API → Restart project** (or run `notify pgrst, 'reload schema';` as a privileged role) so PostgREST picks up the new columns.
 19. Run `migrations/019_watch_pinned_capsule_notify.sql` for **inbox notifications** on **pinned moments**, **watch shelf** (new suggestions + progress + edits), and **new time capsules** (receiver ping when a vault item is created). Adds **`notify_pinned_moment`** and **`notify_watch_shelf`** on **`notification_preferences`** and extends **`notifications.kind`**. Prefer running after **017/018** so watch triggers can use **`recipient_id`**.
 20. Run `migrations/020_message_notification_title.sql` so new **text** notifications use the title **"A new message"** (replaces **"A new note"** in the DB trigger). The app inbox chip for `message` kind reads **MSG** after you deploy the matching frontend build.
-21. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
+21. Run `migrations/021_push_subscription_save_rpc.sql` if **Register this device** fails with **row-level security** on **`push_subscriptions`**. The RPC **`save_my_push_subscription`** clears any stale row for the same browser **endpoint**, then inserts for **`auth.uid()`** (fixes account switches and upsert-RLS conflicts).
+22. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
 
 ```sql
 insert into public.profiles (id, username)

@@ -49,15 +49,15 @@ export async function subscribeWebPushAndSave(userId: string): Promise<{ error: 
     return { error: 'Incomplete push subscription from browser.' }
   }
 
-  const { error } = await supabase.from('push_subscriptions').upsert(
-    {
-      user_id: userId,
-      endpoint: json.endpoint,
-      subscription: json,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'endpoint' },
-  )
+  const { data: sessionData } = await supabase.auth.getSession()
+  if (sessionData.session?.user?.id !== userId) {
+    return { error: 'You must be signed in as this user to register push on this device.' }
+  }
+
+  const { error } = await supabase.rpc('save_my_push_subscription', {
+    p_endpoint: json.endpoint,
+    p_subscription: json as unknown as Record<string, unknown>,
+  })
 
   return { error: error?.message ?? null }
 }
