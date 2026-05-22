@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Clapperboard, Hourglass } from 'lucide-react'
+import { Clapperboard, Hourglass, Sparkles } from 'lucide-react'
 import { NjeCard } from '../components/ui/NjeCard'
 import { PageHeader } from '../components/ui/PageHeader'
 
@@ -11,7 +11,7 @@ export function LoungePage() {
         description="A corner for futures and films "
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Link to="/lounge/capsules" className="group block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nje-border">
           <NjeCard tone="mint" padding="md" className="h-full shadow-[var(--shadow-nje-flat-sm)] transition-transform group-hover:-translate-y-px">
             <div className="flex items-start gap-3">
@@ -38,6 +38,23 @@ export function LoungePage() {
                 <p className="mt-1 text-sm font-semibold leading-snug text-nje-border">mussstt waatchh</p>
                 <p className="mt-1 text-xs leading-relaxed text-nje-muted">
                   You suggest for them, they suggest for you — stars, priority, and a little abi after the credits.
+                </p>
+              </div>
+            </div>
+          </NjeCard>
+        </Link>
+
+        <Link to="/lounge/echoes" className="group block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nje-border">
+          <NjeCard tone="surface" padding="md" className="h-full shadow-[var(--shadow-nje-flat-sm)] transition-transform group-hover:-translate-y-px">
+            <div className="flex items-start gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center border-[2px] border-nje-border bg-nje-bg shadow-[var(--shadow-nje-flat-sm)]">
+                <Sparkles className="size-5 text-nje-border" strokeWidth={2.25} aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-nje-muted">Memory universe</p>
+                <p className="mt-1 text-sm font-semibold leading-snug text-nje-border">Echoes & constellation</p>
+                <p className="mt-1 text-xs leading-relaxed text-nje-muted">
+                  Gentle resurfacing from your thread, pins, capsules, and watches — mapped as a shared night sky.
                 </p>
               </div>
             </div>

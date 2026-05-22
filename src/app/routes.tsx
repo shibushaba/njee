@@ -45,6 +45,11 @@ const WatchSpacePage = lazy(async () => {
   return { default: m.WatchSpacePage }
 })
 
+const MemoryUniversePage = lazy(async () => {
+  const m = await import('../pages/MemoryUniversePage')
+  return { default: m.MemoryUniversePage }
+})
+
 function LoungeShell() {
   return (
     <Suspense fallback={<ChatRouteFallback />}>
@@ -125,6 +130,14 @@ export function AppRoutes() {
             <Route index element={<LoungePage />} />
             <Route path="capsules" element={<TimeCapsulesPage />} />
             <Route path="watch" element={<WatchSpacePage />} />
+            <Route
+              path="echoes"
+              element={
+                <Suspense fallback={<ChatRouteFallback />}>
+                  <MemoryUniversePage />
+                </Suspense>
+              }
+            />
           </Route>
           <Route
             path="ritual"

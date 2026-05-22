@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react'
 import type { MessageRow } from '../../types/message'
 import type { FullscreenMediaPayload } from '../../types/mediaViewer'
 import { cn } from '../../lib/cn'
+import { chatMessageDayKey } from '../../utils/formatChatDateDivider'
+import { ChatDateDivider } from './ChatDateDivider'
 import { EmptyChatState } from './EmptyChatState'
 import { MessageCard } from './MessageCard'
 import { ThreadTypingBubble } from './ThreadTypingBubble'
@@ -85,10 +87,11 @@ export function MessageList({
 
       {!loading && messages.length > 0 ? (
         <ul className="flex flex-col pb-1">
-          {messages.map((m, i) => {
+          {messages.flatMap((m, i) => {
             const prev = i > 0 ? messages[i - 1] : null
             const groupedWithPrev = Boolean(prev && prev.sender_id === m.sender_id)
-            return (
+            const newDay = !prev || chatMessageDayKey(m.created_at) !== chatMessageDayKey(prev.created_at)
+            const row = (
               <li key={m.id} className={cn(!groupedWithPrev && i > 0 ? 'mt-2.5' : groupedWithPrev ? 'mt-1' : '')}>
                 <MessageCard
                   message={m}
@@ -101,6 +104,13 @@ export function MessageList({
                 />
               </li>
             )
+            if (!newDay) return [row]
+            return [
+              <li key={`day-${m.id}`} className={cn(i > 0 ? 'mt-3' : 'mt-0.5')}>
+                <ChatDateDivider iso={m.created_at} className="px-1 py-1" />
+              </li>,
+              row,
+            ]
           })}
         </ul>
       ) : null}
