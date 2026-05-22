@@ -127,4 +127,5 @@ export function TimeCapsuleCard({ capsule, currentUserId, peerUsername, onDelete
       )}
     </motion.article>
   )
-}
+} 
+
