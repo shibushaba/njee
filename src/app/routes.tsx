@@ -5,6 +5,8 @@ import { ProtectedRoute } from '../components/auth/ProtectedRoute'
 import { useAuth } from '../hooks/useAuth'
 import { MobileAppShell } from '../layouts/MobileAppShell'
 import { ChatRoomProvider } from '../providers/ChatRoomProvider'
+import { MidnightLayerProvider } from '../providers/MidnightLayerProvider'
+import { MoodWeatherProvider } from '../providers/MoodWeatherProvider'
 import { NotificationProvider } from '../providers/NotificationProvider'
 import { ChangePasswordPage } from '../pages/ChangePasswordPage'
 import { LoginPage } from '../pages/LoginPage'
@@ -71,7 +73,17 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
-        <Route element={<NotificationProvider><MobileAppShell /></NotificationProvider>}>
+        <Route
+          element={
+            <NotificationProvider>
+              <MidnightLayerProvider>
+                <MoodWeatherProvider>
+                  <MobileAppShell />
+                </MoodWeatherProvider>
+              </MidnightLayerProvider>
+            </NotificationProvider>
+          }
+        >
           <Route index element={<Navigate to="/chat" replace />} />
           <Route
             path="chat"

@@ -5,9 +5,11 @@ import { ChatHeader } from '../components/chat/ChatHeader'
 import { MessageActionSheet } from '../components/chat/MessageActionSheet'
 import { MessageInput } from '../components/chat/MessageInput'
 import { MessageList } from '../components/chat/MessageList'
+import { MidnightPresenceBar } from '../components/midnight/MidnightPresenceBar'
 import { AmbientPresenceBar } from '../components/presence/AmbientPresenceBar'
 import { useChatRoom } from '../context/chat-room-context'
 import { useMessagingChrome } from '../context/messaging-chrome-context'
+import { useOptionalMidnightLayer } from '../hooks/useMidnightLayer'
 import { usePinnedMoments } from '../hooks/usePinnedMoments'
 import { useStreak } from '../hooks/useStreak'
 import type { MessageRow } from '../types/message'
@@ -42,6 +44,7 @@ export function ChatPage() {
 
   const streak = useStreak(currentId, peerId)
   const pinned = usePinnedMoments(currentId, peerId, myPresenceStatus)
+  const midnight = useOptionalMidnightLayer()
 
   const textMessages = useMemo(() => messages.filter((m) => m.message_type === 'text'), [messages])
 
@@ -87,19 +90,35 @@ export function ChatPage() {
             inlineNotifications={messaging?.chatInlineNotifications}
             className="border-b-0 shadow-none"
           />
-          <AmbientPresenceBar
-            myUsername={myUsername}
-            peerUsername={peerUsername}
-            peerOnline={peerOnline}
-            roomConnected={roomConnected}
-            peerTyping={peerTyping}
-            myTyping={composerTyping}
-            peerReady={peerReady}
-            myPresenceStatus={myPresenceStatus}
-            peerPresenceStatus={peerPresenceStatus}
-            setPresenceStatus={setPresenceStatus}
-            className="border-b-0 shadow-none"
-          />
+          {midnight?.snapshot.active ? (
+            <MidnightPresenceBar
+              myUsername={myUsername}
+              peerUsername={peerUsername}
+              peerOnline={peerOnline}
+              roomConnected={roomConnected}
+              peerTyping={peerTyping}
+              myTyping={composerTyping}
+              peerReady={peerReady}
+              myPresenceStatus={myPresenceStatus}
+              peerPresenceStatus={peerPresenceStatus}
+              setPresenceStatus={setPresenceStatus}
+              className="border-b-0 shadow-none"
+            />
+          ) : (
+            <AmbientPresenceBar
+              myUsername={myUsername}
+              peerUsername={peerUsername}
+              peerOnline={peerOnline}
+              roomConnected={roomConnected}
+              peerTyping={peerTyping}
+              myTyping={composerTyping}
+              peerReady={peerReady}
+              myPresenceStatus={myPresenceStatus}
+              peerPresenceStatus={peerPresenceStatus}
+              setPresenceStatus={setPresenceStatus}
+              className="border-b-0 shadow-none"
+            />
+          )}
         </div>
       </div>
 

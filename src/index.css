@@ -65,3 +65,72 @@ body {
 #root {
   @apply min-h-dvh;
 }
+
+@keyframes nje-mood-rain {
+  0% {
+    transform: translateY(-5%) translateX(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(115vh) translateX(-6px);
+    opacity: 0.12;
+  }
+}
+
+@keyframes nje-mood-dust {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translate(6px, -12px);
+    opacity: 0.45;
+  }
+}
+
+@keyframes nje-mood-ember {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: translateY(-42vh) scale(0.35);
+    opacity: 0;
+  }
+}
+
+@keyframes nje-midnight-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes nje-midnight-mote {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translate(-10px, -18px);
+    opacity: 0.35;
+  }
+}
+
+:root[data-midnight='1'] {
+  --shadow-nje-flat: 3px 3px 0 0 rgba(90, 46, 30, 0.14);
+  --shadow-nje-flat-sm: 2px 2px 0 0 rgba(90, 46, 30, 0.12);
+}

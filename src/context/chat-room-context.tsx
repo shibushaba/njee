@@ -42,3 +42,8 @@ export function useChatRoom() {
   }
   return ctx
 }
+
+/** Same context as `useChatRoom`, or `null` outside `ChatRoomProvider` (e.g. mood engine on global shell). */
+export function useOptionalChatRoom(): ChatRoomContextValue | null {
+  return useContext(ChatRoomContext)
+}

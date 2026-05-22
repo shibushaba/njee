@@ -56,7 +56,7 @@ export function MobileAppShell() {
 
   return (
     <MessagingChromeContext.Provider value={messagingChrome}>
-      <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-nje-bg">
+      <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-transparent">
         {!isChatRoute ? (
           <div className="pointer-events-none fixed inset-x-0 top-0 z-[120] flex justify-center px-gutter pt-[max(env(safe-area-inset-top),0.35rem)]">
             <div className="pointer-events-auto flex w-full max-w-lg justify-end sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">

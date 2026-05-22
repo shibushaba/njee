@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import type { StreakMilestone } from '../../types/streak'
 import { cn } from '../../lib/cn'
+import { NJE_MOOD_STREAK_EVENT } from '../../lib/moodWeatherBridge'
 
 const COPY: Record<StreakMilestone, { title: string; body: string }> = {
   7: {
@@ -29,6 +31,14 @@ type MilestonePopupProps = {
 
 export function MilestonePopup({ tier, onDismiss, className }: MilestonePopupProps) {
   const reduceMotion = useReducedMotion()
+
+  useEffect(() => {
+    if (!tier) return
+    window.dispatchEvent(new CustomEvent(NJE_MOOD_STREAK_EVENT, { detail: { active: true } }))
+    return () => {
+      window.dispatchEvent(new CustomEvent(NJE_MOOD_STREAK_EVENT, { detail: { active: false } }))
+    }
+  }, [tier])
 
   return (
     <AnimatePresence>

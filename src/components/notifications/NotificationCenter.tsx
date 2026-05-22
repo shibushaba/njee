@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import type { NotificationRow } from '../../types/notification'
 import { cn } from '../../lib/cn'
+import { useOptionalMidnightLayer } from '../../hooks/useMidnightLayer'
 import { NotificationCard } from './NotificationCard'
 
 type NotificationCenterProps = {
@@ -25,6 +26,8 @@ export function NotificationCenter({
 }: NotificationCenterProps) {
   const reduceMotion = useReducedMotion()
   const navigate = useNavigate()
+  const midnight = useOptionalMidnightLayer()
+  const midnightOn = Boolean(midnight?.snapshot.active)
 
   const handleOpen = async (row: NotificationRow) => {
     await onMarkRead(row.id)
@@ -55,23 +58,29 @@ export function NotificationCenter({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0.12 : 0.2 }}
+          transition={{ duration: reduceMotion ? 0.12 : midnightOn ? 0.28 : 0.2 }}
         >
           <motion.button
             type="button"
             aria-label="Close notifications"
-            className="absolute inset-0 bg-nje-border/20 backdrop-blur-[1px]"
+            className={cn(
+              'absolute inset-0 backdrop-blur-[1px]',
+              midnightOn ? 'bg-nje-border/12' : 'bg-nje-border/20',
+            )}
             onClick={onClose}
           />
           <motion.aside
             role="dialog"
             aria-modal
             aria-labelledby="nje-notify-title"
-            className="relative z-10 flex max-h-[min(85dvh,32rem)] w-full max-w-sm flex-col border-[3px] border-nje-border bg-nje-surface shadow-[var(--shadow-nje-flat)]"
+            className={cn(
+              'relative z-10 flex max-h-[min(85dvh,32rem)] w-full max-w-sm flex-col border-[3px] border-nje-border bg-nje-surface shadow-[var(--shadow-nje-flat)]',
+              midnightOn && 'border-nje-border/85 opacity-[0.97]',
+            )}
             initial={reduceMotion ? false : { x: 24, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { x: 16, opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0.14 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: reduceMotion ? 0.14 : midnightOn ? 0.36 : 0.28, ease: [0.22, 1, 0.36, 1] }}
           >
             <header className="shrink-0 border-b-[2px] border-nje-border px-3 py-2.5">
               <div className="flex items-center justify-between gap-2">
