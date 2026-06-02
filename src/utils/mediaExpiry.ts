@@ -1,5 +1,6 @@
 import type { ChatMediaKind } from '../types/message'
 import type { MediaSendViewMode } from './mediaViewMode'
+import { viewLimitFromSendMode } from './mediaViewMode'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -15,11 +16,9 @@ export function resolveMediaSendPolicy(
   if (kind === 'voice') {
     return { viewLimit: null, mediaExpiresAt: mediaExpiresAtFromNow(24) }
   }
-  if (viewMode === 'once') {
-    return { viewLimit: 1, mediaExpiresAt: null }
-  }
-  if (viewMode === 'twice') {
-    return { viewLimit: 2, mediaExpiresAt: null }
+  const viewLimit = viewLimitFromSendMode(viewMode)
+  if (viewMode === 'once' || viewMode === 'twice') {
+    return { viewLimit, mediaExpiresAt: null }
   }
   return { viewLimit: null, mediaExpiresAt: mediaExpiresAtFromNow(24) }
 }

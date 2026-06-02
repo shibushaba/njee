@@ -26,6 +26,7 @@ import { GDRIVE_MEDIA_PREFIX } from '../utils/gdriveMediaUrl'
 import { resolveMediaSendPolicy } from '../utils/mediaExpiry'
 import type { ReplyInsertMeta } from '../utils/messageReply'
 import type { MediaSendViewMode } from '../utils/mediaViewMode'
+import { viewLimitFromSendMode } from '../utils/mediaViewMode'
 import { chatRoomTopicId } from '../utils/chatTopic'
 import { GoogleDriveProvider, useGoogleDrive } from './GoogleDriveProvider'
 
@@ -428,7 +429,18 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
         return { error: res.error.message }
       }
       if (res.data) {
-        const row = normalizeMessageRow(res.data)
+        let row = normalizeMessageRow(res.data)
+        const expectedLimit = kind === 'voice' ? null : viewLimitFromSendMode(viewMode)
+        if (opts.surface === 'chat' && expectedLimit != null && row.view_limit !== expectedLimit) {
+          const fix = await supabase
+            .from('messages')
+            .update({ view_limit: expectedLimit })
+            .eq('id', row.id)
+            .eq('sender_id', currentId)
+            .select()
+            .single()
+          if (fix.data) row = normalizeMessageRow(fix.data)
+        }
         setMessages((prev) => {
           if (prev.some((m) => m.id === row.id)) return prev
           return [...prev, row].sort(

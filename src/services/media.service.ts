@@ -150,6 +150,22 @@ export async function recordMediaView(messageId: string): Promise<RecordMediaVie
   }
 }
 
+/** Record an open; if the server treats the row as unlimited but we know it is limited, refetch instead of silently allowing more opens. */
+export async function recordMediaViewWithLimit(
+  messageId: string,
+  hint: { viewLimit: number | null; currentViews: number },
+): Promise<RecordMediaViewResult & { needsRefetch?: boolean }> {
+  const limited = hint.viewLimit != null && hint.viewLimit > 0
+  const r = await recordMediaView(messageId)
+  if (limited && r.unlimited) {
+    return { ...r, ok: false, needsRefetch: true, reason: r.reason ?? 'view_limit_missing_on_server' }
+  }
+  if (limited && !r.ok && !r.locked && r.reason) {
+    return { ...r, needsRefetch: true }
+  }
+  return r
+}
+
 export async function purgeDriveMemoryAfterLock(
   driveFileId: string,
   messageId: string,

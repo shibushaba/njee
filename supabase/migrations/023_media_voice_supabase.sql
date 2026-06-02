@@ -149,3 +149,6 @@ begin
   );
 end;
 $$;
+
+revoke all on function public.record_message_media_view(uuid) from public;
+grant execute on function public.record_message_media_view(uuid) to authenticated;

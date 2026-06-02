@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { WheelEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
-import { purgeLockedMediaAfterLock, recordMediaView } from '../../services/media.service'
+import { purgeLockedMediaAfterLock, recordMediaViewWithLimit } from '../../services/media.service'
 import type { MessageRow } from '../../types/message'
 import type { FullscreenMediaPayload } from '../../types/mediaViewer'
 import { VideoPlayer } from './VideoPlayer'
@@ -57,18 +57,36 @@ export function FullscreenMediaViewer({
 
     const mid = messageId
     const mediaRef = payload?.storagePath ?? payload?.driveFileId ?? null
+    const viewLimit = payload?.viewLimit ?? null
+    const currentViews = payload?.currentViews ?? 0
+    const limited = viewLimit != null && viewLimit > 0
 
-    void recordMediaView(mid).then(async (r) => {
+    void recordMediaViewWithLimit(mid, { viewLimit, currentViews }).then(async (r) => {
+      if (r.needsRefetch) {
+        onRecordMediaViewFailureRef.current?.()
+        if (limited && openRef.current && payloadMidRef.current === mid) {
+          onCloseRef.current()
+        }
+        return
+      }
+
       if (!r.unlimited && !r.ok && !r.locked) {
         onRecordMediaViewFailureRef.current?.()
       }
 
-      if (!r.unlimited && (r.ok || r.locked)) {
+      const shouldPatch = !r.unlimited && (r.ok || r.locked)
+      if (shouldPatch) {
         const patch: Partial<MessageRow> = {}
         if (typeof r.current_views === 'number') patch.current_views = r.current_views
         if (r.locked) patch.is_locked = true
 
-        if (r.locked && !r.unlimited && mediaRef) {
+        const exhausted =
+          limited &&
+          (r.locked ||
+            (typeof r.current_views === 'number' && r.current_views >= viewLimit) ||
+            (typeof r.current_views !== 'number' && currentViews + 1 >= viewLimit))
+
+        if (exhausted && mediaRef) {
           const purged = await purgeLockedMediaAfterLock(
             payload?.storagePath ?? (payload?.driveFileId ? `gdrive:${payload.driveFileId}` : ''),
             mid,
@@ -88,7 +106,7 @@ export function FullscreenMediaViewer({
         onCloseRef.current()
       }
     })
-  }, [open, messageId, payload?.storagePath, payload?.driveFileId])
+  }, [open, messageId, payload?.storagePath, payload?.driveFileId, payload?.viewLimit, payload?.currentViews])
 
   useEffect(() => {
     if (!open) {

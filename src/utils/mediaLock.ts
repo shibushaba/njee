@@ -1,11 +1,16 @@
 import type { MessageRow } from '../types/message'
+import { isMediaPastExpiry } from './mediaExpiry'
 
-/** Media was sent with a finite view budget (once / twice). */
-export function mediaHasViewLimit(m: Pick<MessageRow, 'view_limit'>): boolean {
-  return m.view_limit != null && m.view_limit > 0
+/** 24h shelf (Keep / voice) — reopen until expiry, not view-count limited. */
+export function isTimedShelfMedia(m: Pick<MessageRow, 'media_expires_at'>): boolean {
+  return m.media_expires_at != null
 }
 
-import { isMediaPastExpiry } from './mediaExpiry'
+/** Media was sent with a finite view budget (once / twice). */
+export function mediaHasViewLimit(m: Pick<MessageRow, 'view_limit' | 'media_expires_at'>): boolean {
+  if (isTimedShelfMedia(m)) return false
+  return m.view_limit != null && m.view_limit > 0
+}
 
 /** Row is exhausted: server lock, counts reached limit, expiry passed, or message removed. */
 export function isMediaViewLocked(
@@ -22,7 +27,7 @@ export function isMediaViewLocked(
 }
 
 /** Opens remaining for limited media (0 when locked). */
-export function mediaOpensLeft(m: Pick<MessageRow, 'view_limit' | 'current_views'>): number | null {
+export function mediaOpensLeft(m: Pick<MessageRow, 'view_limit' | 'current_views' | 'media_expires_at'>): number | null {
   if (!mediaHasViewLimit(m)) return null
   const limit = m.view_limit as number
   return Math.max(0, limit - m.current_views)

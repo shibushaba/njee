@@ -3,6 +3,9 @@ export type FullscreenMediaPayload = {
   url: string
   messageId: string
   caption?: string
+  /** Set for view-once / view-twice so the viewer enforces limits even if the row was stale. */
+  viewLimit?: number | null
+  currentViews?: number
   /** Legacy Google Drive file id — purge via Drive API when locked. */
   driveFileId?: string | null
   driveVideoEmbedUrl?: string | null
