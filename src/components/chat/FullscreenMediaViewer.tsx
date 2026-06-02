@@ -19,6 +19,12 @@ type FullscreenMediaViewerProps = {
   onRecordMediaViewFailure?: () => void
 }
 
+function mediaRefFromPayload(payload: FullscreenMediaPayload): string | null {
+  if (payload.storagePath) return payload.storagePath
+  if (payload.driveFileId) return `gdrive:${payload.driveFileId}`
+  return null
+}
+
 export function FullscreenMediaViewer({
   open,
   payload,
@@ -26,7 +32,9 @@ export function FullscreenMediaViewer({
   onMediaViewRecorded,
   onRecordMediaViewFailure,
 }: FullscreenMediaViewerProps) {
-  const recordedForOpenRef = useRef<string | null>(null)
+  /** Survives React Strict Mode remounts so we do not double-count / double-close. */
+  const recordedMessageIdRef = useRef<string | null>(null)
+  const pendingPurgeRef = useRef<{ messageId: string; mediaRef: string } | null>(null)
   const openRef = useRef(open)
   const payloadMidRef = useRef<string | null>(null)
   const onCloseRef = useRef(onClose)
@@ -46,27 +54,39 @@ export function FullscreenMediaViewer({
 
   const messageId = payload?.messageId
 
-  useEffect(() => {
-    if (!open) {
-      recordedForOpenRef.current = null
-      return
+  const handleClose = useCallback(() => {
+    const pending = pendingPurgeRef.current
+    pendingPurgeRef.current = null
+    recordedMessageIdRef.current = null
+
+    if (pending) {
+      void purgeLockedMediaAfterLock(pending.mediaRef, pending.messageId).then((purged) => {
+        if (purged.cleared) {
+          onMediaViewRecordedRef.current?.(pending.messageId, {
+            media_url: null,
+            media_type: null,
+          })
+        }
+      })
     }
-    if (!messageId) return
-    if (recordedForOpenRef.current === messageId) return
-    recordedForOpenRef.current = messageId
+
+    onClose()
+  }, [onClose])
+
+  useEffect(() => {
+    if (!open || !messageId || !payload) return
+    if (recordedMessageIdRef.current === messageId) return
+    recordedMessageIdRef.current = messageId
 
     const mid = messageId
-    const mediaRef = payload?.storagePath ?? payload?.driveFileId ?? null
-    const viewLimit = payload?.viewLimit ?? null
-    const currentViews = payload?.currentViews ?? 0
+    const mediaRef = mediaRefFromPayload(payload)
+    const viewLimit = payload.viewLimit ?? null
+    const currentViews = payload.currentViews ?? 0
     const limited = viewLimit != null && viewLimit > 0
 
-    void recordMediaViewWithLimit(mid, { viewLimit, currentViews }).then(async (r) => {
+    void recordMediaViewWithLimit(mid, { viewLimit, currentViews }).then((r) => {
       if (r.needsRefetch) {
         onRecordMediaViewFailureRef.current?.()
-        if (limited && openRef.current && payloadMidRef.current === mid) {
-          onCloseRef.current()
-        }
         return
       }
 
@@ -74,8 +94,7 @@ export function FullscreenMediaViewer({
         onRecordMediaViewFailureRef.current?.()
       }
 
-      const shouldPatch = !r.unlimited && (r.ok || r.locked)
-      if (shouldPatch) {
+      if (!r.unlimited && (r.ok || r.locked)) {
         const patch: Partial<MessageRow> = {}
         if (typeof r.current_views === 'number') patch.current_views = r.current_views
         if (r.locked) patch.is_locked = true
@@ -87,14 +106,7 @@ export function FullscreenMediaViewer({
             (typeof r.current_views !== 'number' && currentViews + 1 >= viewLimit))
 
         if (exhausted && mediaRef) {
-          const purged = await purgeLockedMediaAfterLock(
-            payload?.storagePath ?? (payload?.driveFileId ? `gdrive:${payload.driveFileId}` : ''),
-            mid,
-          )
-          if (purged.cleared) {
-            patch.media_url = null
-            patch.media_type = null
-          }
+          pendingPurgeRef.current = { messageId: mid, mediaRef }
         }
 
         if (Object.keys(patch).length > 0) {
@@ -102,11 +114,21 @@ export function FullscreenMediaViewer({
         }
       }
 
-      if (!r.ok && r.locked && !r.unlimited && openRef.current && payloadMidRef.current === mid) {
-        onCloseRef.current()
+      if (!r.ok && r.locked && !r.unlimited && !r.needsRefetch) {
+        if (openRef.current && payloadMidRef.current === mid) {
+          onCloseRef.current()
+          recordedMessageIdRef.current = null
+        }
       }
     })
-  }, [open, messageId, payload?.storagePath, payload?.driveFileId, payload?.viewLimit, payload?.currentViews])
+  }, [
+    open,
+    messageId,
+    payload?.viewLimit,
+    payload?.currentViews,
+    payload?.storagePath,
+    payload?.driveFileId,
+  ])
 
   useEffect(() => {
     if (!open) {
@@ -125,11 +147,11 @@ export function FullscreenMediaViewer({
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') handleClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [open, handleClose])
 
   const onWheel = useCallback(
     (e: WheelEvent<HTMLDivElement>) => {
@@ -151,7 +173,7 @@ export function FullscreenMediaViewer({
   const node =
     typeof document !== 'undefined' ? (
       <AnimatePresence>
-        {open && payload ? (
+        {open && payload && payload.url ? (
           <motion.div
             key="fs"
             className="fixed inset-0 z-[200] flex flex-col bg-nje-border/90 backdrop-blur-[2px]"
@@ -166,7 +188,7 @@ export function FullscreenMediaViewer({
             <div className="flex shrink-0 items-center justify-end px-2 py-2 sm:px-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="flex size-10 items-center justify-center border-[2px] border-nje-border bg-nje-surface text-nje-border shadow-[0_2px_0_0_rgba(90,46,30,0.06)] transition-transform duration-150 motion-safe:active:translate-y-px"
                 aria-label="Close"
               >
@@ -177,7 +199,7 @@ export function FullscreenMediaViewer({
             <div
               className="relative min-h-0 flex-1 touch-none px-2 pb-3 sm:px-3"
               onClick={(e) => {
-                if (e.target === e.currentTarget) onClose()
+                if (e.target === e.currentTarget) handleClose()
               }}
             >
               {payload.kind === 'image' ? (
