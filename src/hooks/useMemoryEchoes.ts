@@ -6,7 +6,7 @@ import { useStreak } from './useStreak'
 import { useWatchSpace } from './useWatchSpace'
 import type { TimeCapsuleRow } from '../types/timeCapsule'
 import { buildMemoryEchoes } from '../utils/buildMemoryEchoes'
-import { fetchTimeCapsules, subscribeTimeCapsules, syncDueCapsuleUnlocks } from '../services/timeCapsules.service'
+import { prepareTimeCapsules, subscribeTimeCapsules } from '../services/timeCapsules.service'
 
 /** Merges thread + pins + capsules + watch + streak into calm “echo” cards (pair-scoped). */
 export function useMemoryEchoes() {
@@ -26,8 +26,7 @@ export function useMemoryEchoes() {
       setCapsules([])
       return
     }
-    await syncDueCapsuleUnlocks(pairKey)
-    const res = await fetchTimeCapsules(pairKey)
+    const res = await prepareTimeCapsules(pairKey)
     if (res.error) {
       setCapsulesError(res.error)
       setCapsules([])

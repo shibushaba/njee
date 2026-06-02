@@ -17,7 +17,7 @@ export function LockedCapsulePreview({
   senderLabel,
   className,
 }: LockedCapsulePreviewProps) {
-  const displayTitle = title?.trim() || 'Sealed whisper'
+  const displayTitle = isUnlocked ? title?.trim() || 'Opened whisper' : 'Sealed capsule'
 
   return (
     <div

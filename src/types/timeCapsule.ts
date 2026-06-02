@@ -15,4 +15,6 @@ export type TimeCapsuleRow = {
   unlocked_at: string | null
   created_at: string
   context_label: string | null
+  /** 0 = legacy plaintext at rest; 1 = AES-GCM blob in `content`. */
+  encryption_version: number
 }

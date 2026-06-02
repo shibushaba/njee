@@ -21,7 +21,8 @@
 19. Run `migrations/019_watch_pinned_capsule_notify.sql` for **inbox notifications** on **pinned moments**, **watch shelf** (new suggestions + progress + edits), and **new time capsules** (receiver ping when a vault item is created). Adds **`notify_pinned_moment`** and **`notify_watch_shelf`** on **`notification_preferences`** and extends **`notifications.kind`**. Prefer running after **017/018** so watch triggers can use **`recipient_id`**.
 20. Run `migrations/020_message_notification_title.sql` so new **text** notifications use the title **"A new message"** (replaces **"A new note"** in the DB trigger). The app inbox chip for `message` kind reads **MSG** after you deploy the matching frontend build.
 21. Run `migrations/021_push_subscription_save_rpc.sql` if **Register this device** fails with **row-level security** on **`push_subscriptions`**. The RPC **`save_my_push_subscription`** clears any stale row for the same browser **endpoint**, then inserts for **`auth.uid()`** (fixes account switches and upsert-RLS conflicts).
-22. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
+22. Run `migrations/022_time_capsules_encryption.sql` for **`time_capsules.encryption_version`** and sealed-payload constraints. New capsules store **AES-GCM ciphertext** in **`content`** only (title/media cleared at rest); the app decrypts after **`unlock_at`**. Set **`VITE_TIME_CAPSULE_SECRET`** in `.env.local` / Vercel (see `.env.example`).
+23. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
 
 ```sql
 insert into public.profiles (id, username)

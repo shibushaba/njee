@@ -87,7 +87,7 @@ export function CapsuleComposer({ open, onClose, busy, errorText, onSubmit }: Ca
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-nje-muted">Time capsule</p>
               <p className="mt-1 text-sm font-semibold leading-snug text-nje-border">Leave something for later</p>
               <p className="mt-1 text-xs leading-relaxed text-nje-muted">
-                Pick a quiet hour. Until then, only a gentle preview shows — no peeking inside.
+                Pick a quiet hour. Until then, only the countdown shows — your words stay encrypted in the vault.
               </p>
             </div>
 

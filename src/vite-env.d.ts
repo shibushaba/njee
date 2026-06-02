@@ -12,6 +12,8 @@ interface ImportMetaEnv {
   readonly VITE_GOOGLE_SHARED_DRIVE_ID?: string
   /** Web Push / VAPID public key (URL-safe base64). Pair with Edge secrets + `push-notify` function. */
   readonly VITE_VAPID_PUBLIC_KEY?: string
+  /** Pepper for time-capsule AES-GCM (client-side seal). Same value in every deployed build. */
+  readonly VITE_TIME_CAPSULE_SECRET?: string
 }
 
 interface ImportMeta {

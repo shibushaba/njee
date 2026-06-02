@@ -5,8 +5,8 @@ import type { TimeCapsuleRow, TimeCapsuleType } from '../types/timeCapsule'
 import { derivePinContextLabel } from '../utils/pinnedMomentContext'
 import {
   deleteTimeCapsule,
-  fetchTimeCapsules,
   insertTimeCapsule,
+  prepareTimeCapsules,
   subscribeTimeCapsules,
   syncDueCapsuleUnlocks,
 } from '../services/timeCapsules.service'
@@ -32,8 +32,7 @@ export function useTimeCapsules(
     }
     setLoading(true)
     setError(null)
-    await syncDueCapsuleUnlocks(pairKey)
-    const res = await fetchTimeCapsules(pairKey)
+    const res = await prepareTimeCapsules(pairKey)
     setLoading(false)
     if (res.error) {
       setError(res.error)
