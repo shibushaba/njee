@@ -98,14 +98,15 @@ export function ChatPage() {
 
   const handleOpenMedia = useCallback(
     (payload: FullscreenMediaPayload) => {
+      if (!currentId) return
       const row = messages.find((m) => m.id === payload.messageId)
       if (!row) return
       if (isMediaViewLocked(row)) return
       const limit = mediaViewLimitValue(row)
-      if (limit != null && !canOpenLimitedMedia(row)) return
+      if (limit != null && !canOpenLimitedMedia(row, currentId)) return
       setMediaViewer(payload)
     },
-    [messages],
+    [messages, currentId],
   )
 
   const handleDeleteFromSheet = useCallback(async () => {

@@ -2,21 +2,25 @@ import { useMemo } from 'react'
 import type { MessageRow } from '../types/message'
 import { canOpenLimitedMedia, mediaHasViewLimit, mediaOpensLeft } from '../utils/mediaLock'
 import { isMediaViewLocked } from '../utils/mediaLock'
+import { resolveMediaViewMode } from '../utils/mediaViewPill'
 
 export type MediaViewsState = {
   isUnlimited: boolean
   hasLimit: boolean
-  /** view_once / view_twice style (no in-thread preview). */
+  /** view_once / view_twice — compact pill, receiver opens only. */
   isEphemeral: boolean
+  /** keep / voice — 24h pill, both can open. */
+  isShelfPill: boolean
   isLocked: boolean
   canOpen: boolean
-  /** Opens remaining before lock (after current_views recorded opens). */
   opensLeft: number | null
 }
 
-export function useMediaViews(message: MessageRow): MediaViewsState {
+export function useMediaViews(message: MessageRow, currentUserId: string | null): MediaViewsState {
   const hasLimit = mediaHasViewLimit(message)
-  const isUnlimited = !hasLimit
+  const mode = resolveMediaViewMode(message)
+  const isShelfPill = mode === 'keep' || Boolean(message.media_expires_at && !hasLimit)
+  const isUnlimited = !hasLimit && !isShelfPill
 
   const isLocked = useMemo(() => isMediaViewLocked(message), [
     message.id,
@@ -41,14 +45,15 @@ export function useMediaViews(message: MessageRow): MediaViewsState {
     }
     if (!message.media_url) return false
     if (isLocked) return false
-    if (hasLimit) return canOpenLimitedMedia(message)
+    if (hasLimit) return canOpenLimitedMedia(message, currentUserId)
     return true
-  }, [hasLimit, isLocked, message])
+  }, [currentUserId, hasLimit, isLocked, message])
 
   return {
     isUnlimited,
     hasLimit,
     isEphemeral: hasLimit,
+    isShelfPill,
     isLocked,
     canOpen,
     opensLeft,

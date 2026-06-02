@@ -49,7 +49,8 @@ where not (
 25. Run `migrations/025_notifications_hide_deleted_messages.sql` to remove inbox pings for **soft-deleted messages**, purge them on future deletes, and fix unread counts (`count_unread_notifications` RPC).
 26. Run `migrations/026_fix_media_view_counting.sql` so **view once / twice** increments `current_views`, locks at the limit, and re-grants `record_message_media_view` (required if once/twice feel unlimited).
 27. Run `migrations/027_media_view_mode.sql` for **`media_view_mode`** (`once` | `twice` | `keep`), RPC limit resolution, and backfill — **required** for strict view-once/twice after older rows had `view_limit` null.
-28. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
+28. Run `migrations/028_receiver_only_once_twice.sql` so **only the receiver** can open/count **once/twice** media (sender sees status pill only).
+29. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
 insert into public.profiles (id, username)
 select id, 'finu' from auth.users where email = 'finu@nje.app'
 on conflict (id) do update set username = excluded.username;

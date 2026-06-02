@@ -68,11 +68,17 @@ export function mediaHasViewLimit(m: Pick<MessageRow, 'media_view_mode' | 'view_
 }
 
 export function canOpenLimitedMedia(
-  m: Pick<MessageRow, 'id' | 'media_view_mode' | 'view_limit' | 'current_views' | 'is_locked' | 'media_url' | 'deleted_at'>,
+  m: Pick<
+    MessageRow,
+    'id' | 'sender_id' | 'receiver_id' | 'media_view_mode' | 'view_limit' | 'current_views' | 'is_locked' | 'media_url' | 'deleted_at'
+  >,
+  viewerId: string | null,
 ): boolean {
-  if (m.deleted_at || !m.media_url) return false
+  if (!viewerId || m.deleted_at || !m.media_url) return false
   const limit = mediaViewLimitValue(m)
   if (limit == null) return true
+  if (viewerId === m.sender_id) return false
+  if (viewerId !== m.receiver_id) return false
   if (m.is_locked) return false
   return effectiveViewCount(m.id, m.current_views) < limit
 }
