@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { MessageRow } from '../types/message'
-import { isMediaViewLocked, mediaHasViewLimit, mediaOpensLeft } from '../utils/mediaLock'
+import { canOpenLimitedMedia, mediaHasViewLimit, mediaOpensLeft } from '../utils/mediaLock'
+import { isMediaViewLocked } from '../utils/mediaLock'
 
 export type MediaViewsState = {
   isUnlimited: boolean
@@ -14,35 +15,40 @@ export type MediaViewsState = {
 }
 
 export function useMediaViews(message: MessageRow): MediaViewsState {
-  const isUnlimited = message.view_limit == null
   const hasLimit = mediaHasViewLimit(message)
-  const isEphemeral = hasLimit
+  const isUnlimited = !hasLimit
 
   const isLocked = useMemo(() => isMediaViewLocked(message), [
+    message.id,
     message.current_views,
     message.deleted_at,
     message.is_locked,
     message.message_type,
     message.view_limit,
+    message.media_view_mode,
     message.media_expires_at,
     message.media_url,
   ])
 
   const opensLeft = useMemo(() => {
-    if (!hasLimit || isUnlimited) return null
+    if (!hasLimit) return null
     return mediaOpensLeft(message)
-  }, [hasLimit, isUnlimited, message.current_views, message.view_limit])
+  }, [hasLimit, message.id, message.current_views, message.view_limit, message.media_view_mode])
 
   const canOpen = useMemo(() => {
-    if (message.message_type !== 'image' && message.message_type !== 'video' && message.message_type !== 'voice') return false
+    if (message.message_type !== 'image' && message.message_type !== 'video' && message.message_type !== 'voice') {
+      return false
+    }
     if (!message.media_url) return false
-    return !isLocked
-  }, [isLocked, message.media_url, message.message_type])
+    if (isLocked) return false
+    if (hasLimit) return canOpenLimitedMedia(message)
+    return true
+  }, [hasLimit, isLocked, message])
 
   return {
     isUnlimited,
     hasLimit,
-    isEphemeral,
+    isEphemeral: hasLimit,
     isLocked,
     canOpen,
     opensLeft,

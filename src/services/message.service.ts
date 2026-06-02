@@ -33,6 +33,10 @@ export function normalizeMessageRow(row: unknown): MessageRow {
     media_surface:
       r.media_surface === 'chat' || r.media_surface === 'memories' ? r.media_surface : null,
     media_expires_at: r.media_expires_at != null ? String(r.media_expires_at) : null,
+    media_view_mode:
+      r.media_view_mode === 'once' || r.media_view_mode === 'twice' || r.media_view_mode === 'keep'
+        ? r.media_view_mode
+        : null,
   }
 }
 
@@ -108,6 +112,7 @@ export async function sendMediaMessage(
     caption: string
     viewLimit?: number | null
     mediaExpiresAt?: string | null
+    mediaViewMode?: 'once' | 'twice' | 'keep' | null
     mediaSurface?: 'chat' | 'memories'
     isLocked?: boolean
     reply?: ReplyInsertMeta | null
@@ -127,6 +132,7 @@ export async function sendMediaMessage(
       seen: false,
       view_limit: params.viewLimit ?? null,
       media_expires_at: params.mediaExpiresAt ?? null,
+      media_view_mode: params.mediaViewMode ?? null,
       media_surface: params.mediaSurface ?? null,
       current_views: 0,
       is_locked: params.isLocked ?? false,

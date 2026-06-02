@@ -27,6 +27,7 @@ import { resolveMediaSendPolicy } from '../utils/mediaExpiry'
 import type { ReplyInsertMeta } from '../utils/messageReply'
 import type { MediaSendViewMode } from '../utils/mediaViewMode'
 import { viewLimitFromSendMode } from '../utils/mediaViewMode'
+import type { MediaViewMode } from '../types/message'
 import { chatRoomTopicId } from '../utils/chatTopic'
 import { GoogleDriveProvider, useGoogleDrive } from './GoogleDriveProvider'
 
@@ -359,6 +360,8 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
 
       const viewMode: MediaSendViewMode = kind === 'voice' ? 'unlimited' : (opts.viewMode ?? 'once')
       const policy = resolveMediaSendPolicy(kind, viewMode)
+      const mediaViewMode: MediaViewMode | null =
+        kind === 'voice' ? 'keep' : viewMode === 'unlimited' ? 'keep' : viewMode
 
       notifyTyping(false)
       setSending(true)
@@ -420,6 +423,7 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
         caption,
         viewLimit: policy.viewLimit,
         mediaExpiresAt: policy.mediaExpiresAt,
+        mediaViewMode,
         mediaSurface: opts.surface,
         isLocked: false,
         reply: opts.reply ?? undefined,
@@ -431,10 +435,17 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
       if (res.data) {
         let row = normalizeMessageRow(res.data)
         const expectedLimit = kind === 'voice' ? null : viewLimitFromSendMode(viewMode)
-        if (opts.surface === 'chat' && expectedLimit != null && row.view_limit !== expectedLimit) {
+        const needsFix =
+          opts.surface === 'chat' &&
+          (row.media_view_mode !== mediaViewMode ||
+            (expectedLimit != null && row.view_limit !== expectedLimit))
+        if (needsFix) {
           const fix = await supabase
             .from('messages')
-            .update({ view_limit: expectedLimit })
+            .update({
+              view_limit: expectedLimit,
+              media_view_mode: mediaViewMode,
+            })
             .eq('id', row.id)
             .eq('sender_id', currentId)
             .select()

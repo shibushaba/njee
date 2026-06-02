@@ -3,9 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { WheelEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
-import { purgeLockedMediaAfterLock, recordMediaViewWithLimit } from '../../services/media.service'
+import { purgeLockedMediaAfterLock, recordMediaView } from '../../services/media.service'
 import type { MessageRow } from '../../types/message'
 import type { FullscreenMediaPayload } from '../../types/mediaViewer'
+import { applyLimitedViewOpen, effectiveViewCount } from '../../utils/limitedMediaViews'
 import { VideoPlayer } from './VideoPlayer'
 
 export type { FullscreenMediaPayload } from '../../types/mediaViewer'
@@ -84,9 +85,36 @@ export function FullscreenMediaViewer({
     const currentViews = payload.currentViews ?? 0
     const limited = viewLimit != null && viewLimit > 0
 
-    void recordMediaViewWithLimit(mid, { viewLimit, currentViews }).then((r) => {
-      if (r.needsRefetch) {
-        onRecordMediaViewFailureRef.current?.()
+    if (limited && effectiveViewCount(mid, currentViews) >= viewLimit) {
+      onCloseRef.current()
+      recordedMessageIdRef.current = null
+      return
+    }
+
+    void recordMediaView(mid).then(async (r) => {
+      if (limited && viewLimit) {
+        const applied = applyLimitedViewOpen(mid, viewLimit, currentViews, r)
+        const patch: Partial<MessageRow> = {
+          current_views: applied.current_views,
+          is_locked: applied.is_locked,
+        }
+        if (applied.exhausted && mediaRef) {
+          pendingPurgeRef.current = { messageId: mid, mediaRef }
+        }
+        onMediaViewRecordedRef.current?.(mid, patch)
+        if (r.unlimited) {
+          onRecordMediaViewFailureRef.current?.()
+        }
+        if (applied.exhausted && mediaRef) {
+          void purgeLockedMediaAfterLock(mediaRef, mid).then((purged) => {
+            if (purged.cleared) {
+              onMediaViewRecordedRef.current?.(mid, {
+                media_url: null,
+                media_type: null,
+              })
+            }
+          })
+        }
         return
       }
 
@@ -98,23 +126,12 @@ export function FullscreenMediaViewer({
         const patch: Partial<MessageRow> = {}
         if (typeof r.current_views === 'number') patch.current_views = r.current_views
         if (r.locked) patch.is_locked = true
-
-        const exhausted =
-          limited &&
-          (r.locked ||
-            (typeof r.current_views === 'number' && r.current_views >= viewLimit) ||
-            (typeof r.current_views !== 'number' && currentViews + 1 >= viewLimit))
-
-        if (exhausted && mediaRef) {
-          pendingPurgeRef.current = { messageId: mid, mediaRef }
-        }
-
         if (Object.keys(patch).length > 0) {
           onMediaViewRecordedRef.current?.(mid, patch)
         }
       }
 
-      if (!r.ok && r.locked && !r.unlimited && !r.needsRefetch) {
+      if (!r.ok && r.locked && !r.unlimited) {
         if (openRef.current && payloadMidRef.current === mid) {
           onCloseRef.current()
           recordedMessageIdRef.current = null

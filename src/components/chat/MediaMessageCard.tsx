@@ -8,6 +8,7 @@ import { useMediaViews } from '../../hooks/useMediaViews'
 import { useLongPress } from '../../hooks/useLongPress'
 import { createSignedMediaUrl } from '../../services/media.service'
 import { isGdriveMediaRef, parseGdriveFileId, publicDriveThumbnailUrl } from '../../utils/gdriveMediaUrl'
+import { mediaViewLimitValue } from '../../utils/limitedMediaViews'
 import type { FullscreenMediaPayload } from '../../types/mediaViewer'
 import { EphemeralMediaPlaceholder } from './EphemeralMediaPlaceholder'
 import { InlineMessageReply } from './InlineMessageReply'
@@ -25,9 +26,10 @@ type MediaMessageCardProps = {
 }
 
 function withViewBudget(message: MessageRow, payload: FullscreenMediaPayload): FullscreenMediaPayload {
+  const limit = mediaViewLimitValue(message)
   return {
     ...payload,
-    viewLimit: message.view_limit,
+    viewLimit: limit,
     currentViews: message.current_views,
   }
 }
@@ -164,7 +166,7 @@ export function MediaMessageCard({
   }, [canOpen, mediaKind, message, onOpenMedia])
 
   const caption = message.content.trim()
-  const ephemeralLimit = message.view_limit ?? 1
+  const ephemeralLimit = mediaViewLimitValue(message) ?? 1
   const ephemeralOpensLeft = opensLeft ?? ephemeralLimit
 
   const replyAuthor =

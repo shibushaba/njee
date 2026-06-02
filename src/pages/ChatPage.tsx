@@ -16,6 +16,7 @@ import { useStreak } from '../hooks/useStreak'
 import { isChatThreadMedia } from '../services/mediaLifecycle.service'
 import type { MessageRow } from '../types/message'
 import type { FullscreenMediaPayload } from '../types/mediaViewer'
+import { canOpenLimitedMedia, mediaViewLimitValue } from '../utils/limitedMediaViews'
 import { isMediaViewLocked } from '../utils/mediaLock'
 import type { MediaSendViewMode } from '../utils/mediaViewMode'
 import type { ReplyInsertMeta } from '../utils/messageReply'
@@ -98,7 +99,10 @@ export function ChatPage() {
   const handleOpenMedia = useCallback(
     (payload: FullscreenMediaPayload) => {
       const row = messages.find((m) => m.id === payload.messageId)
-      if (row && isMediaViewLocked(row)) return
+      if (!row) return
+      if (isMediaViewLocked(row)) return
+      const limit = mediaViewLimitValue(row)
+      if (limit != null && !canOpenLimitedMedia(row)) return
       setMediaViewer(payload)
     },
     [messages],

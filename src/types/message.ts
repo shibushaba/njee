@@ -2,6 +2,8 @@ export type ChatMediaKind = 'image' | 'video' | 'voice'
 
 export type MessageType = 'text' | ChatMediaKind
 
+export type MediaViewMode = 'once' | 'twice' | 'keep'
+
 export type MessageRow = {
   id: string
   sender_id: string
@@ -24,6 +26,8 @@ export type MessageRow = {
   media_surface: 'chat' | 'memories' | null
   /** Keep + voice: purge blob after this time (~24h from send). */
   media_expires_at: string | null
+  /** once | twice | keep — source of truth for view-once/twice when view_limit was missing. */
+  media_view_mode: MediaViewMode | null
 }
 
 export type ProfileRow = {
