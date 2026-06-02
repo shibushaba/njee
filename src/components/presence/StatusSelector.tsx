@@ -31,7 +31,7 @@ export function StatusSelector({ open, onClose, value, onSelect, busy }: StatusS
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:p-4"
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -47,13 +47,13 @@ export function StatusSelector({ open, onClose, value, onSelect, busy }: StatusS
             role="dialog"
             aria-modal="true"
             aria-labelledby={panelId}
-            initial={{ y: 18, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 14, opacity: 0 }}
+            initial={{ scale: 0.96, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.96, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 420, damping: 36 }}
             className={cn(
-              'relative z-[1] w-full max-w-md border-[2px] border-nje-border bg-nje-surface shadow-[0_6px_0_0_rgba(90,46,30,0.06)] sm:rounded-sm',
-              'max-h-[min(58vh,380px)] overflow-hidden rounded-t-sm sm:max-h-[min(52vh,340px)]',
+              'relative z-[1] w-full max-w-md overflow-hidden rounded-sm border-[2px] border-nje-border bg-nje-surface shadow-[0_6px_0_0_rgba(90,46,30,0.06)]',
+              'max-h-[min(85dvh,420px)]',
             )}
           >
             <div className="flex items-center justify-between border-b-[2px] border-nje-border px-3 py-2.5 sm:px-3.5">

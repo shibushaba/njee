@@ -81,27 +81,34 @@ export function useNotifications(options?: UseNotificationsOptions) {
 
   useEffect(() => {
     if (!userId || !inbox) return
-    const unsub = subscribeNotifications(userId, (row, event) => {
-      setItems((prev) => {
-        if (event === 'INSERT') {
-          const next = [row, ...prev.filter((r) => r.id !== row.id)]
-          return next.slice(0, 100)
-        }
-        return prev.map((r) => (r.id === row.id ? row : r))
-      })
-      void refreshUnread()
+    const unsub = subscribeNotifications(
+      userId,
+      (row, event) => {
+        setItems((prev) => {
+          if (event === 'INSERT') {
+            const next = [row, ...prev.filter((r) => r.id !== row.id)]
+            return next.slice(0, 100)
+          }
+          return prev.map((r) => (r.id === row.id ? row : r))
+        })
+        void refreshUnread()
 
-      const p = prefsRef.current
-      if (
-        event === 'INSERT' &&
-        p?.browser_push &&
-        typeof document !== 'undefined' &&
-        document.visibilityState === 'hidden' &&
-        kindAllowsBrowserPush(row.kind, p)
-      ) {
-        showQuietBrowserNotification(row.title, { body: row.body.slice(0, 140), tag: `nje-${row.id}` })
-      }
-    })
+        const p = prefsRef.current
+        if (
+          event === 'INSERT' &&
+          p?.browser_push &&
+          typeof document !== 'undefined' &&
+          document.visibilityState === 'hidden' &&
+          kindAllowsBrowserPush(row.kind, p)
+        ) {
+          showQuietBrowserNotification(row.title, { body: row.body.slice(0, 140), tag: `nje-${row.id}` })
+        }
+      },
+      (id) => {
+        setItems((prev) => prev.filter((r) => r.id !== id))
+        void refreshUnread()
+      },
+    )
     return unsub
   }, [userId, inbox, refreshUnread])
 

@@ -5,6 +5,9 @@ import type {
   NotificationPreferencesRow,
   NotificationRow,
 } from '../types/notification'
+import { filterNotificationsInbox } from '../utils/filterNotificationsInbox'
+
+const NOTIFICATION_SELECT = '*, message:messages!ref_message_id(deleted_at)'
 
 const NOTIFICATION_KINDS: NotificationKind[] = [
   'message',
@@ -71,27 +74,47 @@ export const defaultNotificationPreferences = (): Omit<
 export async function fetchNotifications(userId: string, limit = 80) {
   const { data, error } = await supabase
     .from('notifications')
-    .select('*')
+    .select(NOTIFICATION_SELECT)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit)
 
   if (error) return { data: [] as NotificationRow[], error }
+  const mapped = (data ?? []).map((r) => {
+    const raw = r as Record<string, unknown> & { message?: { deleted_at: string | null } | null }
+    const { message, ...rest } = raw
+    return {
+      ...normalizeNotification(rest as Record<string, unknown>),
+      message: message ?? null,
+    }
+  })
   return {
-    data: (data ?? []).map((r) => normalizeNotification(r as Record<string, unknown>)),
+    data: filterNotificationsInbox(mapped),
     error: null,
   }
 }
 
 export async function fetchUnreadNotificationCount(userId: string) {
-  const { count, error } = await supabase
+  const { data, error } = await supabase.rpc('count_unread_notifications', { p_user: userId })
+
+  if (!error && typeof data === 'number') {
+    return { count: data, error: null }
+  }
+
+  const { data: rows, error: fallbackError } = await supabase
     .from('notifications')
-    .select('id', { count: 'exact', head: true })
+    .select(NOTIFICATION_SELECT)
     .eq('user_id', userId)
     .is('read_at', null)
 
-  if (error) return { count: 0, error }
-  return { count: count ?? 0, error: null }
+  if (fallbackError) return { count: 0, error: fallbackError }
+  const count = filterNotificationsInbox(
+    (rows ?? []).map((r) => ({
+      ...normalizeNotification(r as Record<string, unknown>),
+      message: (r as { message?: { deleted_at: string | null } | null }).message ?? null,
+    })),
+  ).length
+  return { count, error: null }
 }
 
 export async function markNotificationRead(userId: string, id: string) {
@@ -160,6 +183,7 @@ export async function upsertNotificationPreferences(
 export function subscribeNotifications(
   userId: string,
   onChange: (row: NotificationRow, event: 'INSERT' | 'UPDATE') => void,
+  onDelete?: (notificationId: string) => void,
 ): () => void {
   const topic = `nje-notifications:${userId}`
   const channel = supabase
@@ -174,8 +198,12 @@ export function subscribeNotifications(
       },
       (payload) => {
         const ev = payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE'
-        if (ev === 'DELETE') return
-        const raw = (ev === 'INSERT' ? payload.new : payload.new) as Record<string, unknown> | undefined
+        if (ev === 'DELETE') {
+          const old = payload.old as Record<string, unknown> | undefined
+          if (old?.id != null) onDelete?.(String(old.id))
+          return
+        }
+        const raw = payload.new as Record<string, unknown> | undefined
         if (!raw) return
         onChange(normalizeNotification(raw), ev)
       },

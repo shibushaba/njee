@@ -46,7 +46,8 @@ where not (
 ```
 
 24. Run `migrations/024_media_surface_expiry.sql` for **`media_surface`** (`chat` vs `memories`) and **`media_expires_at`** (~24h auto-purge for Keep + voice).
-25. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
+25. Run `migrations/025_notifications_hide_deleted_messages.sql` to remove inbox pings for **soft-deleted messages**, purge them on future deletes, and fix unread counts (`count_unread_notifications` RPC).
+26. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
 insert into public.profiles (id, username)
 select id, 'finu' from auth.users where email = 'finu@nje.app'
 on conflict (id) do update set username = excluded.username;
