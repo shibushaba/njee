@@ -13,7 +13,7 @@ export function MoodPage() {
     <div className="flex flex-col gap-stack-lg pb-stack-lg">
       <PageHeader
         title="Mood"
-        description="The room’s light shifts with time, presence, and the small rhythms between you two — never loud, always felt."
+        description="The room’s light shifts with time, presence, and small daily rhythms — never loud, always felt."
       />
       <div className="flex flex-col gap-stack-md">
         <MoodWeatherIndicator

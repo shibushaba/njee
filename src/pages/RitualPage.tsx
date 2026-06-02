@@ -18,7 +18,7 @@ export function RitualPage() {
         description="A soft counter for the days you both reach out — not a score, a shared rhythm."
       />
       {!peerReady ? (
-        <p className="text-sm text-nje-muted">Connect your thread in chat first — the ritual needs two profiles.</p>
+        <p className="text-sm text-nje-muted">Connect your thread in chat first — the ritual needs both profiles.</p>
       ) : (
         <>
           <StreakCard row={streak.row} loading={streak.loading} className="shadow-[var(--shadow-nje-flat-sm)]" />

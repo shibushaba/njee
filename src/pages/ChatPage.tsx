@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { NjeCard } from '../components/ui/NjeCard'
 import { MilestonePopup } from '../components/streak/MilestonePopup'
 import { ChatHeader } from '../components/chat/ChatHeader'
+import { FullscreenMediaViewer } from '../components/chat/FullscreenMediaViewer'
 import { MessageActionSheet } from '../components/chat/MessageActionSheet'
 import { MessageInput } from '../components/chat/MessageInput'
 import { MessageList } from '../components/chat/MessageList'
@@ -12,13 +13,19 @@ import { useMessagingChrome } from '../context/messaging-chrome-context'
 import { useOptionalMidnightLayer } from '../hooks/useMidnightLayer'
 import { usePinnedMoments } from '../hooks/usePinnedMoments'
 import { useStreak } from '../hooks/useStreak'
+import { isChatThreadMedia } from '../services/mediaLifecycle.service'
 import type { MessageRow } from '../types/message'
+import type { FullscreenMediaPayload } from '../types/mediaViewer'
+import { isMediaViewLocked } from '../utils/mediaLock'
+import type { MediaSendViewMode } from '../utils/mediaViewMode'
+import type { ReplyInsertMeta } from '../utils/messageReply'
 import { buildReplyInsertMeta } from '../utils/messageReply'
 
 export function ChatPage() {
   const [composerTyping, setComposerTyping] = useState(false)
   const [replyTo, setReplyTo] = useState<MessageRow | null>(null)
   const [sheetMessage, setSheetMessage] = useState<MessageRow | null>(null)
+  const [mediaViewer, setMediaViewer] = useState<FullscreenMediaPayload | null>(null)
 
   const messaging = useMessagingChrome()
 
@@ -35,7 +42,10 @@ export function ChatPage() {
     peerTyping,
     roomConnected,
     sendMessage,
+    sendMedia,
     deleteMessage,
+    patchMessage,
+    reload,
     notifyTyping,
     peerPresenceStatus,
     myPresenceStatus,
@@ -46,7 +56,10 @@ export function ChatPage() {
   const pinned = usePinnedMoments(currentId, peerId, myPresenceStatus)
   const midnight = useOptionalMidnightLayer()
 
-  const textMessages = useMemo(() => messages.filter((m) => m.message_type === 'text'), [messages])
+  const chatMessages = useMemo(
+    () => messages.filter((m) => m.message_type === 'text' || isChatThreadMedia(m)),
+    [messages],
+  )
 
   const peerReady = Boolean(peerId)
 
@@ -66,6 +79,29 @@ export function ChatPage() {
       return res
     },
     [replyTo, sendMessage],
+  )
+
+  const handleSendMedia = useCallback(
+    async (
+      file: File,
+      caption: string,
+      opts: { surface: 'chat' | 'memories'; viewMode: MediaSendViewMode; reply?: ReplyInsertMeta | null },
+      onUploadProgress?: (pct: number) => void,
+    ) => {
+      const res = await sendMedia(file, caption, { ...opts, surface: 'chat' }, onUploadProgress)
+      if (!res.error) setReplyTo(null)
+      return res
+    },
+    [sendMedia],
+  )
+
+  const handleOpenMedia = useCallback(
+    (payload: FullscreenMediaPayload) => {
+      const row = messages.find((m) => m.id === payload.messageId)
+      if (row && isMediaViewLocked(row)) return
+      setMediaViewer(payload)
+    },
+    [messages],
   )
 
   const handleDeleteFromSheet = useCallback(async () => {
@@ -144,12 +180,13 @@ export function ChatPage() {
       ) : null}
 
       <MessageList
-        messages={textMessages}
+        messages={chatMessages}
         currentUserId={currentId}
         peerUsername={peerUsername}
         loading={loading}
         peerReady={peerReady}
         peerTyping={peerTyping}
+        onOpenMedia={handleOpenMedia}
         onOpenMessageActions={(m) => {
           if (m.deleted_at) return
           setSheetMessage(m)
@@ -160,12 +197,22 @@ export function ChatPage() {
 
       <MessageInput
         variant="chat"
+        surface="chat"
         replyTo={replyTo}
         onClearReply={() => setReplyTo(null)}
         onSend={handleSendText}
+        onSendMedia={handleSendMedia}
         onTypingActivity={handleTypingActivity}
         disabled={!peerReady || Boolean(error)}
         sending={sending}
+      />
+
+      <FullscreenMediaViewer
+        open={Boolean(mediaViewer)}
+        payload={mediaViewer}
+        onClose={() => setMediaViewer(null)}
+        onMediaViewRecorded={patchMessage}
+        onRecordMediaViewFailure={() => void reload()}
       />
 
       <MilestonePopup tier={streak.milestone} onDismiss={streak.dismissMilestone} />

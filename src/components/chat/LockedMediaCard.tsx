@@ -7,7 +7,7 @@ import { MediaLockOverlay } from './MediaLockOverlay'
 type LockedMediaCardProps = {
   /** Storage path in the media bucket (same as message.media_url). */
   storagePath: string | null | undefined
-  kind: 'image' | 'video'
+  kind: 'image' | 'video' | 'voice'
   className?: string
 }
 

@@ -38,7 +38,7 @@ export function WatchSpacePage() {
     <div className="flex min-h-0 flex-1 flex-col gap-stack-lg pb-stack-lg">
       <PageHeader
         title="Suggestion portal"
-        description="A two-way letterbox: you suggest for them, they suggest for you — stars, priority, and quiet abi when the film is done."
+        description="A letterbox: suggest for them, they suggest for you — stars, priority, and quiet abi when the film is done."
         action={
           <Link
             to="/lounge"

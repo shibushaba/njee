@@ -104,7 +104,7 @@ export function NotificationCenter({
                   </button>
                 </div>
               </div>
-              <p className="mt-1 text-[0.65rem] leading-relaxed text-nje-muted">Only what matters between you two.</p>
+              <p className="mt-1 text-[0.65rem] leading-relaxed text-nje-muted">Only what matters here.</p>
             </header>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               {loading ? (

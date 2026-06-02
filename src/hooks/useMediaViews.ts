@@ -24,6 +24,8 @@ export function useMediaViews(message: MessageRow): MediaViewsState {
     message.is_locked,
     message.message_type,
     message.view_limit,
+    message.media_expires_at,
+    message.media_url,
   ])
 
   const opensLeft = useMemo(() => {
@@ -32,7 +34,7 @@ export function useMediaViews(message: MessageRow): MediaViewsState {
   }, [hasLimit, isUnlimited, message.current_views, message.view_limit])
 
   const canOpen = useMemo(() => {
-    if (message.message_type !== 'image' && message.message_type !== 'video') return false
+    if (message.message_type !== 'image' && message.message_type !== 'video' && message.message_type !== 'voice') return false
     if (!message.media_url) return false
     return !isLocked
   }, [isLocked, message.media_url, message.message_type])

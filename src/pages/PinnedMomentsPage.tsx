@@ -14,7 +14,7 @@ export function PinnedMomentsPage() {
     <div className="flex min-h-0 flex-1 flex-col gap-stack-lg pb-stack-lg">
       <PageHeader
         title="Pinned moments"
-        description="A shelf for what mattered — text, photos, and film from your thread. Shared between you two."
+        description="A shelf for what mattered — text, photos, and film from your thread."
       />
 
       {!peerReady ? (
@@ -35,7 +35,7 @@ export function PinnedMomentsPage() {
           <p className="text-sm font-semibold text-nje-border">Nothing pinned yet</p>
           <p className="mt-1 text-xs leading-relaxed text-nje-muted">
             Long-press a message in chat or memories, then choose <span className="font-semibold">Pin to moments</span>.
-            Each message can only be saved once — together, not like a feed.
+            Each message can only be saved once — not like a feed.
           </p>
         </NjeCard>
       ) : (

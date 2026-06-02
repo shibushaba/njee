@@ -1,9 +1,9 @@
-import { Image as ImageIcon, Video } from 'lucide-react'
+import { Image as ImageIcon, Mic, Video } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '../../lib/cn'
 
 type EphemeralMediaPlaceholderProps = {
-  kind: 'image' | 'video'
+  kind: 'image' | 'video' | 'voice'
   opening?: boolean
   viewLimit: number
   opensLeft: number
@@ -12,12 +12,12 @@ type EphemeralMediaPlaceholderProps = {
 
 function limitHint(viewLimit: number, opensLeft: number): string {
   if (viewLimit <= 1) {
-    return 'Opens once only. After that it stays closed.'
+    return 'One open — then removed from storage.'
   }
   if (opensLeft >= viewLimit) {
-    return `Opens at most ${viewLimit} times. No more after that.`
+    return `Up to ${viewLimit} opens — then removed from storage.`
   }
-  return `Opens at most ${viewLimit} times. ${opensLeft} left before it closes.`
+  return `${opensLeft} open${opensLeft === 1 ? '' : 's'} left — then removed from storage.`
 }
 
 export function EphemeralMediaPlaceholder({
@@ -49,6 +49,8 @@ export function EphemeralMediaPlaceholder({
       >
         {kind === 'video' ? (
           <Video className="size-4" strokeWidth={2.25} aria-hidden />
+        ) : kind === 'voice' ? (
+          <Mic className="size-4" strokeWidth={2.25} aria-hidden />
         ) : (
           <ImageIcon className="size-4" strokeWidth={2.25} aria-hidden />
         )}

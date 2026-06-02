@@ -37,7 +37,8 @@ export function MediaMessageCard({
   const inView = useInView(rootRef, { once: true, margin: '48px' })
   const { isLocked, canOpen, hasLimit, isUnlimited, isEphemeral, opensLeft } = useMediaViews(message)
   const shouldLoadThreadPreview = !isEphemeral && !isLocked && inView
-  const mediaKind = message.message_type === 'video' ? 'video' : 'image'
+  const mediaKind =
+    message.message_type === 'video' ? 'video' : message.message_type === 'voice' ? 'voice' : 'image'
   const { url, loading, error } = useSignedMediaUrl(message.media_url, shouldLoadThreadPreview, mediaKind)
 
   const [openingEphemeral, setOpeningEphemeral] = useState(false)
@@ -57,7 +58,7 @@ export function MediaMessageCard({
         if (res.error) return
         if (!res.url && !(mediaKind === 'video' && res.driveVideoEmbedUrl)) return
         onOpenMedia({
-          kind: mediaKind === 'video' ? 'video' : 'image',
+          kind: mediaKind === 'video' ? 'video' : mediaKind === 'voice' ? 'voice' : 'image',
           url: res.url ?? publicDriveThumbnailUrl(fileId),
           messageId: message.id,
           caption: message.content.trim() || undefined,
@@ -74,6 +75,7 @@ export function MediaMessageCard({
         url,
         messageId: message.id,
         caption: message.content.trim() || undefined,
+        storagePath: isGdriveMediaRef(message.media_url) ? null : message.media_url,
       })
     } else if (message.message_type === 'video') {
       onOpenMedia({
@@ -81,6 +83,15 @@ export function MediaMessageCard({
         url,
         messageId: message.id,
         caption: message.content.trim() || undefined,
+        storagePath: isGdriveMediaRef(message.media_url) ? null : message.media_url,
+      })
+    } else if (message.message_type === 'voice') {
+      onOpenMedia({
+        kind: 'voice',
+        url,
+        messageId: message.id,
+        caption: message.content.trim() || undefined,
+        storagePath: message.media_url,
       })
     }
   }, [canOpen, mediaKind, message.content, message.id, message.media_url, message.message_type, onOpenMedia, url])
@@ -107,6 +118,7 @@ export function MediaMessageCard({
         messageId: message.id,
         caption: message.content.trim() || undefined,
         driveFileId: fileId ?? undefined,
+        storagePath: fileId ? null : mediaUrl,
       })
     } else if (message.message_type === 'video') {
       onOpenMedia({
@@ -116,6 +128,15 @@ export function MediaMessageCard({
         caption: message.content.trim() || undefined,
         driveFileId: fileId ?? undefined,
         driveVideoEmbedUrl: res.driveVideoEmbedUrl ?? undefined,
+        storagePath: fileId ? null : mediaUrl,
+      })
+    } else if (message.message_type === 'voice') {
+      onOpenMedia({
+        kind: 'voice',
+        url: res.url ?? '',
+        messageId: message.id,
+        caption: message.content.trim() || undefined,
+        storagePath: mediaUrl,
       })
     }
   }, [canOpen, mediaKind, message.content, message.id, message.media_url, message.message_type, onOpenMedia])
@@ -185,7 +206,9 @@ export function MediaMessageCard({
               aria-label={
                 message.message_type === 'video'
                   ? `Open full-screen video (${ephemeralOpensLeft} of ${ephemeralLimit} opens left)`
-                  : `Open full-screen photo (${ephemeralOpensLeft} of ${ephemeralLimit} opens left)`
+                  : message.message_type === 'voice'
+                    ? `Open voice note (${ephemeralOpensLeft} of ${ephemeralLimit} opens left)`
+                    : `Open full-screen photo (${ephemeralOpensLeft} of ${ephemeralLimit} opens left)`
               }
             >
               <EphemeralMediaPlaceholder

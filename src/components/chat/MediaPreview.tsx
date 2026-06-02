@@ -43,12 +43,14 @@ export function MediaPreview({ file, onClear, className }: MediaPreviewProps) {
       <div className="max-h-32 w-full overflow-hidden bg-nje-bg sm:max-h-36">
         {kind === 'image' ? (
           <img src={src} alt="" className="mx-auto max-h-32 w-full object-contain sm:max-h-36" />
+        ) : kind === 'voice' ? (
+          <audio src={src} controls className="mx-auto w-full px-2 py-3" />
         ) : (
           <video src={src} className="mx-auto max-h-32 w-full object-contain sm:max-h-36" muted playsInline />
         )}
       </div>
       <p className="border-t-[2px] border-nje-border px-2 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-nje-muted">
-        {kind === 'image' ? 'Image' : 'Video'}
+        {kind === 'image' ? 'Image' : kind === 'voice' ? 'Voice' : 'Video'}
       </p>
     </motion.div>
   )

@@ -4,7 +4,7 @@ import { createSignedMediaUrl } from '../services/media.service'
 export function useSignedMediaUrl(
   path: string | null | undefined,
   enabled: boolean,
-  mediaKind: 'image' | 'video' = 'image',
+  mediaKind: 'image' | 'video' | 'voice' = 'image',
 ) {
   const [url, setUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)

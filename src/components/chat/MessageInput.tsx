@@ -5,6 +5,7 @@ import { Send, X } from 'lucide-react'
 import { useMessagingChrome } from '../../context/messaging-chrome-context'
 import { cn } from '../../lib/cn'
 import type { MessageRow } from '../../types/message'
+import { classifyMediaFile } from '../../services/media.service'
 import type { MediaSendViewMode } from '../../utils/mediaViewMode'
 import type { ReplyInsertMeta } from '../../utils/messageReply'
 import { buildReplyInsertMeta } from '../../utils/messageReply'
@@ -14,18 +15,17 @@ import { MediaViewSelector } from './MediaViewSelector'
 import { UploadProgress } from './UploadProgress'
 
 type MessageInputProps = {
-  /** Chat = text only. Memories = photo/video upload only (no text messages into chat). */
+  /** Chat = text + Supabase media. Memories = Google shelf media. */
   variant?: 'chat' | 'memories'
+  surface: 'chat' | 'memories'
   replyTo?: MessageRow | null
   onClearReply?: () => void
-  /** Required for `variant="chat"`. Ignored for memories. */
   onSend?: (text: string) => Promise<{ error: string | null }>
-  /** Required for `variant="memories"`. */
   onSendMedia?: (
     file: File,
     caption: string,
-    opts: { viewMode: MediaSendViewMode; reply?: ReplyInsertMeta | null },
-    onUploadProgress: (pct: number) => void,
+    opts: { surface: 'chat' | 'memories'; viewMode: MediaSendViewMode; reply?: ReplyInsertMeta | null },
+    onUploadProgress?: (pct: number) => void,
   ) => Promise<{ error: string | null }>
   onTypingActivity?: (active: boolean) => void
   disabled: boolean
@@ -34,6 +34,7 @@ type MessageInputProps = {
 
 export function MessageInput({
   variant = 'chat',
+  surface,
   replyTo,
   onClearReply,
   onSend,
@@ -50,6 +51,9 @@ export function MessageInput({
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<MediaSendViewMode>('once')
+
+  const pendingKind = pendingFile ? classifyMediaFile(pendingFile) : null
+  const isVoicePending = pendingKind === 'voice'
 
   useEffect(() => {
     if (disabled && typingActiveRef.current) {
@@ -70,7 +74,6 @@ export function MessageInput({
   function pushTypingFromValue(next: string) {
     const active = next.trim().length > 0
     if (active) {
-      // Heartbeat while composing so the peer's debounce keeps resetting (not only on first character).
       typingActiveRef.current = true
       onTypingActivity?.(true)
       return
@@ -90,13 +93,14 @@ export function MessageInput({
     e.preventDefault()
     setError(null)
 
-    if (isMemories && pendingFile && onSendMedia) {
+    if (pendingFile && onSendMedia) {
       setUploadProgress(0)
       const { error: sendErr } = await onSendMedia(
         pendingFile,
         value,
         {
-          viewMode,
+          surface,
+          viewMode: isVoicePending ? 'unlimited' : viewMode,
           reply: replyTo ? buildReplyInsertMeta(replyTo) : null,
         },
         (p) => setUploadProgress(p),
@@ -114,7 +118,7 @@ export function MessageInput({
     }
 
     if (isMemories) {
-      setError('Choose a photo or video to send.')
+      setError('Choose a photo, video, or voice note to send.')
       return
     }
 
@@ -137,13 +141,13 @@ export function MessageInput({
   }
 
   const canSendText = value.trim().length > 0
-  const canSendMedia = Boolean(isMemories && pendingFile && onSendMedia)
+  const canSendMedia = Boolean(pendingFile && onSendMedia)
   const uploading = uploadProgress !== null && uploadProgress < 100
   const submitDisabled =
     disabled ||
     sending ||
     uploading ||
-    (isMemories ? !canSendMedia : !onSend || (!canSendText && !canSendMedia))
+    (pendingFile ? !canSendMedia : isMemories ? true : !onSend || !canSendText)
 
   return (
     <motion.form
@@ -175,28 +179,47 @@ export function MessageInput({
           </p>
         ) : null}
 
-        {isMemories && pendingFile ? (
+        {pendingFile ? (
           <>
             <MediaPreview file={pendingFile} onClear={clearPending} className="mb-1.5" />
-            <MediaViewSelector
-              value={viewMode}
-              onChange={setViewMode}
-              disabled={disabled || sending || uploading}
-              className="mb-1"
-            />
+            {!isVoicePending && surface === 'chat' ? (
+              <MediaViewSelector
+                value={viewMode}
+                onChange={setViewMode}
+                disabled={disabled || sending || uploading}
+                className="mb-1"
+              />
+            ) : null}
             <p className="mb-1.5 text-[0.62rem] leading-snug text-nje-muted">
-              <span className="font-semibold text-nje-border/85">Keep</span> keeps a preview you can reopen.
-              <span className="font-semibold text-nje-border/85"> View once / Twice</span> limits opens in Memories.
+              {isVoicePending ? (
+                <>Voice stays open for <span className="font-semibold text-nje-border/85">24 hours</span>, then leaves storage.</>
+              ) : surface === 'memories' ? (
+                <>Uploads to Google Drive when connected.</>
+              ) : viewMode === 'unlimited' ? (
+                <>
+                  <span className="font-semibold text-nje-border/85">Keep</span> — reopen until end of day (~24h), then
+                  auto-removed.
+                </>
+              ) : viewMode === 'twice' ? (
+                <>
+                  <span className="font-semibold text-nje-border/85">Twice</span> — two opens, then removed from storage.
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold text-nje-border/85">View once</span> — one open, then removed from
+                  storage.
+                </>
+              )}
             </p>
           </>
         ) : null}
 
-        {isMemories && uploadProgress !== null && uploadProgress < 100 ? (
+        {uploadProgress !== null && uploadProgress < 100 ? (
           <UploadProgress progress={uploadProgress} className="mb-1.5" />
         ) : null}
 
         <div className="flex items-end gap-1.5">
-          {isMemories && onSendMedia ? (
+          {onSendMedia ? (
             <MediaUploadButton
               disabled={disabled || sending || uploading}
               onPick={(file) => setPendingFile(file)}
@@ -204,27 +227,35 @@ export function MessageInput({
           ) : null}
 
           <label htmlFor="nje-chat-input" className="sr-only">
-            {isMemories && pendingFile ? 'Caption' : 'Message'}
+            {pendingFile ? 'Caption' : 'Message'}
           </label>
           <textarea
             id="nje-chat-input"
             name="message"
-            rows={isMemories ? 2 : 1}
+            rows={isMemories || pendingFile ? 2 : 1}
             maxLength={4000}
             value={value}
             disabled={disabled || sending}
             onChange={(e) => {
               const next = e.target.value
               setValue(next)
-              pushTypingFromValue(next)
+              if (!isMemories) pushTypingFromValue(next)
             }}
             onFocus={() => messagingChrome?.setComposerFocused(true)}
             onBlur={() => {
               messagingChrome?.setComposerFocused(false)
-              typingActiveRef.current = false
-              onTypingActivity?.(false)
+              if (!isMemories) {
+                typingActiveRef.current = false
+                onTypingActivity?.(false)
+              }
             }}
-            placeholder={isMemories ? (pendingFile ? 'Optional note…' : 'Pick media below, add a note…') : 'Message…'}
+            placeholder={
+              pendingFile
+                ? 'Optional note…'
+                : isMemories
+                  ? 'Pick media below, add a note…'
+                  : 'Message… or attach media'
+            }
             className={cn(
               'min-h-[2.35rem] max-h-28 w-full flex-1 resize-y border-[2px] border-nje-border bg-nje-bg px-2 py-1.5 text-sm leading-snug text-nje-border outline-none transition-shadow duration-150',
               'placeholder:text-nje-whisper focus-visible:shadow-[0_2px_0_0_rgba(90,46,30,0.06)] sm:min-h-[2.5rem]',
@@ -237,7 +268,7 @@ export function MessageInput({
               'flex size-10 shrink-0 items-center justify-center border-[2px] border-nje-border bg-nje-mint text-nje-border shadow-[0_2px_0_0_rgba(90,46,30,0.06)] transition-[transform,box-shadow] duration-150',
               'hover:shadow-[0_3px_0_0_rgba(90,46,30,0.08)] disabled:cursor-not-allowed disabled:opacity-55 motion-safe:active:translate-y-px sm:size-11',
             )}
-            aria-label={isMemories && pendingFile ? 'Send media' : 'Send message'}
+            aria-label={pendingFile ? 'Send media' : 'Send message'}
           >
             <Send className="size-[1.05rem]" strokeWidth={2.5} aria-hidden />
           </button>

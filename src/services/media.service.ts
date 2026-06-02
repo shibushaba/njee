@@ -1,5 +1,7 @@
 import { getGoogleDriveAccessTokenFromSession } from '../lib/googleDriveSession'
 import { supabase } from '../lib/supabase'
+import type { ChatMediaKind } from '../types/message'
+import { mediaThreadFolder } from '../utils/chatTopic'
 import { driveDeleteFile } from './googleDrive/driveApi'
 import {
   isGdriveMediaRef,
@@ -11,35 +13,50 @@ import {
 
 export const MEDIA_BUCKET = 'media' as const
 
-export type ChatMediaKind = 'image' | 'video'
-
 export function classifyMediaFile(file: File): ChatMediaKind | null {
   if (file.type.startsWith('image/')) return 'image'
   if (file.type.startsWith('video/')) return 'video'
+  if (file.type.startsWith('audio/')) return 'voice'
   return null
+}
+
+function safeFileExt(name: string): string {
+  const base = name.split(/[/\\]/).pop() ?? 'file'
+  const dot = base.lastIndexOf('.')
+  if (dot <= 0 || dot === base.length - 1) return 'bin'
+  const ext = base.slice(dot + 1).toLowerCase().replace(/[^a-z0-9]/g, '')
+  return ext || 'bin'
+}
+
+/** Upload to private Supabase Storage under the thread folder (RLS in migration 002). */
+export async function uploadChatMedia(
+  file: File,
+  senderId: string,
+  peerId: string,
+): Promise<{ path: string | null; error: string | null }> {
+  const folder = mediaThreadFolder(senderId, peerId)
+  const path = `${folder}/${crypto.randomUUID()}.${safeFileExt(file.name)}`
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, {
+    contentType: file.type || undefined,
+    upsert: false,
+  })
+  if (error) return { path: null, error: error.message }
+  return { path, error: null }
 }
 
 export type SignedMediaUrlResult = {
   url: string | null
   error: string | null
-  /** Present for Google Drive blob URLs — revoke when the URL is no longer shown. */
   revoke?: () => void
-  /** Full-screen Drive video uses this embed URL (link-shared file; no Google login). */
   driveVideoEmbedUrl?: string | null
 }
 
 export type CreateSignedMediaUrlOptions = {
   expiresIn?: number
-  /** Required for `gdrive:` paths when choosing thumbnail vs full download. */
-  mediaKind?: 'image' | 'video'
-  /** For Drive videos: `false` uses thumbnail in thread; `true` downloads full file (e.g. fullscreen). */
+  mediaKind?: ChatMediaKind
   fullMedia?: boolean
 }
 
-/**
- * Signed Supabase Storage URL, or authenticated Google Drive URL / blob URL for `gdrive:<fileId>`.
- * Second argument can be `expiresIn` (number) for storage-only, or an options object.
- */
 export async function createSignedMediaUrl(
   path: string | null | undefined,
   expiresInOrOptions?: number | CreateSignedMediaUrlOptions,
@@ -107,7 +124,6 @@ function parseRpcJson(data: unknown): Record<string, unknown> {
   return {}
 }
 
-/** JSON / PostgREST may return real booleans or strings; avoid Boolean("false") === true. */
 function rpcBool(value: unknown): boolean {
   if (value === true || value === 1) return true
   if (value === false || value === 0 || value === null || value === undefined) return false
@@ -134,10 +150,6 @@ export async function recordMediaView(messageId: string): Promise<RecordMediaVie
   }
 }
 
-/**
- * Deletes the Drive object (needs a Google session on this device) then clears `media_url` via RPC
- * so limited-view memories stop referencing storage after the last view.
- */
 export async function purgeDriveMemoryAfterLock(
   driveFileId: string,
   messageId: string,
@@ -150,6 +162,30 @@ export async function purgeDriveMemoryAfterLock(
   if (del.error) {
     return { cleared: false, error: del.error }
   }
+  const { data, error } = await supabase.rpc('clear_locked_media_path', { p_message_id: messageId })
+  if (error) {
+    return { cleared: false, error: error.message }
+  }
+  const row = parseRpcJson(data)
+  return { cleared: rpcBool(row.ok) }
+}
+
+/** Delete Storage object (or legacy Drive file) after the single view, then clear DB path. */
+export async function purgeLockedMediaAfterLock(
+  mediaUrl: string,
+  messageId: string,
+): Promise<{ cleared: boolean; error?: string }> {
+  if (isGdriveMediaRef(mediaUrl)) {
+    const fid = parseGdriveFileId(mediaUrl)
+    if (!fid) return { cleared: false, error: 'invalid_drive_ref' }
+    return purgeDriveMemoryAfterLock(fid, messageId)
+  }
+
+  const { error: rmErr } = await supabase.storage.from(MEDIA_BUCKET).remove([mediaUrl])
+  if (rmErr) {
+    return { cleared: false, error: rmErr.message }
+  }
+
   const { data, error } = await supabase.rpc('clear_locked_media_path', { p_message_id: messageId })
   if (error) {
     return { cleared: false, error: error.message }

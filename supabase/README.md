@@ -22,9 +22,31 @@
 20. Run `migrations/020_message_notification_title.sql` so new **text** notifications use the title **"A new message"** (replaces **"A new note"** in the DB trigger). The app inbox chip for `message` kind reads **MSG** after you deploy the matching frontend build.
 21. Run `migrations/021_push_subscription_save_rpc.sql` if **Register this device** fails with **row-level security** on **`push_subscriptions`**. The RPC **`save_my_push_subscription`** clears any stale row for the same browser **endpoint**, then inserts for **`auth.uid()`** (fixes account switches and upsert-RLS conflicts).
 22. Run `migrations/022_time_capsules_encryption.sql` for **`time_capsules.encryption_version`** and sealed-payload constraints. New capsules store **AES-GCM ciphertext** in **`content`** only (title/media cleared at rest); the app decrypts after **`unlock_at`**. Set **`VITE_TIME_CAPSULE_SECRET`** in `.env.local` / Vercel (see `.env.example`).
-23. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
+23. Run `migrations/023_media_voice_supabase.sql` for **voice** message type, **audio** MIME types on the **`media`** bucket, and RPC updates for view counting. **Chat** uploads use Supabase Storage with **Once / Twice / Keep**; **Memories** still uses Google Drive when connected. If **`messages_body_ck` violated by some row** appears, pull the latest 023 from the repo and run it again (it fixes purged media + tombstones before re-adding the check). Still stuck? Run this in SQL Editor and share/fix the returned rows:
 
 ```sql
+select id, message_type, media_url, media_type, is_locked, deleted_at,
+  char_length(trim(coalesce(content, ''))) as content_len
+from public.messages m
+where not (
+  (deleted_at is null and message_type = 'text' and media_url is null
+    and char_length(trim(content)) between 1 and 4000)
+  or (deleted_at is null and message_type = 'image' and media_url is not null
+    and media_type = 'image' and char_length(trim(coalesce(content, ''))) <= 4000)
+  or (deleted_at is null and message_type = 'video' and media_url is not null
+    and media_type = 'video' and char_length(trim(coalesce(content, ''))) <= 4000)
+  or (deleted_at is null and message_type = 'voice' and media_url is not null
+    and media_type = 'voice' and char_length(trim(coalesce(content, ''))) <= 4000)
+  or (deleted_at is null and message_type in ('image', 'video', 'voice')
+    and media_url is null and media_type is null and is_locked = true
+    and char_length(trim(coalesce(content, ''))) <= 4000)
+  or (deleted_at is not null and message_type = 'text' and media_url is null
+    and media_type is null and char_length(trim(coalesce(content, ''))) between 0 and 4000)
+);
+```
+
+24. Run `migrations/024_media_surface_expiry.sql` for **`media_surface`** (`chat` vs `memories`) and **`media_expires_at`** (~24h auto-purge for Keep + voice).
+25. **Profiles:** insert one row per auth user so the app can resolve the other user (two accounts only):
 insert into public.profiles (id, username)
 select id, 'finu' from auth.users where email = 'finu@nje.app'
 on conflict (id) do update set username = excluded.username;

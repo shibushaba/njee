@@ -24,7 +24,11 @@ export type ChatRoomContextValue = {
   sendMedia: (
     file: File,
     caption: string,
-    opts: { viewMode: MediaSendViewMode; reply?: ReplyInsertMeta | null },
+    opts: {
+      surface: 'chat' | 'memories'
+      viewMode?: MediaSendViewMode
+      reply?: ReplyInsertMeta | null
+    },
     onUploadProgress?: (pct: number) => void,
   ) => Promise<{ error: string | null }>
   deleteMessage: (messageId: string) => Promise<{ error: string | null }>

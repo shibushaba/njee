@@ -15,15 +15,17 @@ import {
   sendTextMessage,
   softDeleteMessage,
 } from '../services/message.service'
-import { classifyMediaFile } from '../services/media.service'
+import { classifyMediaFile, uploadChatMedia } from '../services/media.service'
+import { sweepMediaLifecycle } from '../services/mediaLifecycle.service'
 import { driveAddAnyoneReaderPermission, driveUploadMultipart } from '../services/googleDrive/driveApi'
 import type { MessageRow } from '../types/message'
 import type { PresenceStatusId } from '../types/presenceStatus'
 import { isPresenceStatusId } from '../types/presenceStatus'
 import { fetchProfilePresence, updateMyPresence } from '../services/presenceStatus.service'
 import { GDRIVE_MEDIA_PREFIX } from '../utils/gdriveMediaUrl'
+import { resolveMediaSendPolicy } from '../utils/mediaExpiry'
 import type { ReplyInsertMeta } from '../utils/messageReply'
-import { viewLimitFromSendMode, type MediaSendViewMode } from '../utils/mediaViewMode'
+import type { MediaSendViewMode } from '../utils/mediaViewMode'
 import { chatRoomTopicId } from '../utils/chatTopic'
 import { GoogleDriveProvider, useGoogleDrive } from './GoogleDriveProvider'
 
@@ -79,6 +81,7 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
   const channelRef = useRef<RealtimeChannel | null>(null)
   const typingOffTimerRef = useRef<number>(0)
   const myPresenceStatusRef = useRef<PresenceStatusId>('active_now')
+  const purgeAttemptedRef = useRef<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     if (!currentId) {
@@ -338,7 +341,11 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
     async (
       file: File,
       caption: string,
-      opts: { viewMode: MediaSendViewMode; reply?: ReplyInsertMeta | null },
+      opts: {
+        surface: 'chat' | 'memories'
+        viewMode?: MediaSendViewMode
+        reply?: ReplyInsertMeta | null
+      },
       onUploadProgress?: (pct: number) => void,
     ): Promise<{ error: string | null }> => {
       if (!currentId || !peerId) {
@@ -346,55 +353,73 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
       }
       const kind = classifyMediaFile(file)
       if (!kind) {
-        return { error: 'Only images or videos can be sent.' }
+        return { error: 'Only images, videos, or voice notes can be sent.' }
       }
 
-      if (!readGoogleClientId() || !readDriveRootFolderId()) {
-        return {
-          error:
-            'Google Drive is not configured. Add VITE_GOOGLE_CLIENT_ID and VITE_GOOGLE_DRIVE_ROOT_FOLDER_ID to .env.local.',
-        }
-      }
-      if (!gd.accessToken) {
-        return { error: 'Connect Google on the Memories screen before uploading.' }
-      }
-      if (!gd.foldersReady) {
-        return { error: 'Google Drive folders are still preparing. Try again in a moment.' }
-      }
-
-      const category = kind === 'image' ? 'photos' : 'videos'
-      const parent = gd.folderId(category)
-      if (!parent) {
-        return { error: 'Drive folder for this media type is not ready.' }
-      }
+      const viewMode: MediaSendViewMode = kind === 'voice' ? 'unlimited' : (opts.viewMode ?? 'once')
+      const policy = resolveMediaSendPolicy(kind, viewMode)
 
       notifyTyping(false)
       setSending(true)
 
-      const up = await driveUploadMultipart(gd.accessToken, file, parent, (loaded, total) => {
-        if (total > 0) onUploadProgress?.(Math.min(99, Math.round((loaded / total) * 100)))
-      })
-      onUploadProgress?.(100)
+      let mediaPath: string | null = null
 
-      if (up.error || !up.file?.id) {
-        setSending(false)
-        return { error: up.error ?? 'Upload to Google Drive failed.' }
-      }
-
-      const share = await driveAddAnyoneReaderPermission(gd.accessToken, up.file.id)
-      if (share.error) {
-        setSending(false)
-        return {
-          error: `Uploaded, but sharing failed (link access required for playback): ${share.error}`,
+      if (opts.surface === 'memories') {
+        if (!readGoogleClientId() || !readDriveRootFolderId()) {
+          setSending(false)
+          return {
+            error:
+              'Google Drive is not configured yet. Memories uploads will work once VITE_GOOGLE_CLIENT_ID and VITE_GOOGLE_DRIVE_ROOT_FOLDER_ID are set.',
+          }
         }
+        if (!gd.accessToken) {
+          setSending(false)
+          return { error: 'Connect Google on the Memories screen before uploading.' }
+        }
+        if (!gd.foldersReady) {
+          setSending(false)
+          return { error: 'Google Drive folders are still preparing. Try again in a moment.' }
+        }
+        const category = kind === 'image' ? 'photos' : kind === 'video' ? 'videos' : 'photos'
+        const parent = gd.folderId(category)
+        if (!parent) {
+          setSending(false)
+          return { error: 'Drive folder for this media type is not ready.' }
+        }
+        const up = await driveUploadMultipart(gd.accessToken, file, parent, (loaded, total) => {
+          if (total > 0) onUploadProgress?.(Math.min(99, Math.round((loaded / total) * 100)))
+        })
+        onUploadProgress?.(100)
+        if (up.error || !up.file?.id) {
+          setSending(false)
+          return { error: up.error ?? 'Upload to Google Drive failed.' }
+        }
+        const share = await driveAddAnyoneReaderPermission(gd.accessToken, up.file.id)
+        if (share.error) {
+          setSending(false)
+          return { error: `Uploaded, but sharing failed: ${share.error}` }
+        }
+        mediaPath = `${GDRIVE_MEDIA_PREFIX}${up.file.id}`
+      } else {
+        onUploadProgress?.(15)
+        const up = await uploadChatMedia(file, currentId, peerId)
+        onUploadProgress?.(85)
+        if (up.error || !up.path) {
+          setSending(false)
+          onUploadProgress?.(0)
+          return { error: up.error ?? 'Upload failed.' }
+        }
+        mediaPath = up.path
+        onUploadProgress?.(100)
       }
 
-      const mediaPath = `${GDRIVE_MEDIA_PREFIX}${up.file.id}`
       const res = await sendMediaMessage(currentId, peerId, {
         mediaPath,
         mediaType: kind,
         caption,
-        viewLimit: viewLimitFromSendMode(opts.viewMode),
+        viewLimit: policy.viewLimit,
+        mediaExpiresAt: policy.mediaExpiresAt,
+        mediaSurface: opts.surface,
         isLocked: false,
         reply: opts.reply ?? undefined,
       })
@@ -419,6 +444,28 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
   const patchMessage = useCallback((messageId: string, patch: Partial<MessageRow>) => {
     setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, ...patch } : m)))
   }, [])
+
+  useEffect(() => {
+    if (!peerId || messages.length === 0) return
+    void sweepMediaLifecycle(messages, patchMessage, purgeAttemptedRef.current)
+  }, [messages, peerId, patchMessage])
+
+  useEffect(() => {
+    if (!peerId) return
+    const tick = window.setInterval(() => {
+      void sweepMediaLifecycle(messages, patchMessage, purgeAttemptedRef.current)
+    }, 60_000)
+    const onVis = () => {
+      if (document.visibilityState === 'visible') {
+        void sweepMediaLifecycle(messages, patchMessage, purgeAttemptedRef.current)
+      }
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.clearInterval(tick)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [peerId, messages, patchMessage])
 
   const deleteMessage = useCallback(
     async (messageId: string): Promise<{ error: string | null }> => {

@@ -1,4 +1,4 @@
-export type ChatMediaKind = 'image' | 'video'
+export type ChatMediaKind = 'image' | 'video' | 'voice'
 
 export type MessageType = 'text' | ChatMediaKind
 
@@ -20,6 +20,10 @@ export type MessageRow = {
   reply_snippet: string | null
   reply_message_type: MessageType | null
   reply_sender_id: string | null
+  /** chat = Supabase thread media; memories = shelf (Drive when configured). */
+  media_surface: 'chat' | 'memories' | null
+  /** Keep + voice: purge blob after this time (~24h from send). */
+  media_expires_at: string | null
 }
 
 export type ProfileRow = {

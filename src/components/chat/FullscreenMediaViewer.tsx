@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { WheelEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
-import { purgeDriveMemoryAfterLock, recordMediaView } from '../../services/media.service'
+import { purgeLockedMediaAfterLock, recordMediaView } from '../../services/media.service'
 import type { MessageRow } from '../../types/message'
 import type { FullscreenMediaPayload } from '../../types/mediaViewer'
 import { VideoPlayer } from './VideoPlayer'
@@ -56,7 +56,7 @@ export function FullscreenMediaViewer({
     recordedForOpenRef.current = messageId
 
     const mid = messageId
-    const driveFid = payload?.driveFileId ?? null
+    const mediaRef = payload?.storagePath ?? payload?.driveFileId ?? null
 
     void recordMediaView(mid).then(async (r) => {
       if (!r.unlimited && !r.ok && !r.locked) {
@@ -68,8 +68,11 @@ export function FullscreenMediaViewer({
         if (typeof r.current_views === 'number') patch.current_views = r.current_views
         if (r.locked) patch.is_locked = true
 
-        if (r.locked && !r.unlimited && driveFid) {
-          const purged = await purgeDriveMemoryAfterLock(driveFid, mid)
+        if (r.locked && !r.unlimited && mediaRef) {
+          const purged = await purgeLockedMediaAfterLock(
+            payload?.storagePath ?? (payload?.driveFileId ? `gdrive:${payload.driveFileId}` : ''),
+            mid,
+          )
           if (purged.cleared) {
             patch.media_url = null
             patch.media_type = null
@@ -85,7 +88,7 @@ export function FullscreenMediaViewer({
         onCloseRef.current()
       }
     })
-  }, [open, messageId, payload?.driveFileId])
+  }, [open, messageId, payload?.storagePath, payload?.driveFileId])
 
   useEffect(() => {
     if (!open) {
@@ -204,6 +207,10 @@ export function FullscreenMediaViewer({
                       className="max-h-[calc(100dvh-7rem)] max-w-full border-[2px] border-nje-border object-contain shadow-[0_3px_0_0_rgba(90,46,30,0.08)]"
                     />
                   </div>
+                </div>
+              ) : payload.kind === 'voice' ? (
+                <div className="flex h-full max-h-[calc(100dvh-4.75rem)] w-full items-center justify-center px-4">
+                  <audio controls autoPlay src={payload.url} className="w-full max-w-md" preload="auto" />
                 </div>
               ) : payload.driveVideoEmbedUrl ? (
                 <div className="flex h-full max-h-[calc(100dvh-4.75rem)] w-full items-center justify-center px-1">

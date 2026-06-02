@@ -80,7 +80,7 @@ export function MessageList({
       {showEmpty && emptyVariant === 'memories' ? (
         <div className="flex min-h-[28vh] items-center justify-center px-2">
           <p className="max-w-xs text-center text-sm leading-relaxed text-nje-muted">
-            No photos or videos yet. Add one below — they stay here, not in the chat thread.
+            No photos, videos, or voice notes yet. Add one below — they stay on the shelf, not in the chat thread.
           </p>
         </div>
       ) : null}

@@ -221,7 +221,7 @@ const MOOD_COPY: Record<MoodWeatherId, { label: string; description: string }> =
   },
   sleepy_atmosphere: {
     label: 'Sleepy air',
-    description: 'Both of you resting — the room holds its breath.',
+    description: 'Resting — the room holds its breath.',
   },
   study_ambience: {
     label: 'Study calm',
@@ -229,7 +229,7 @@ const MOOD_COPY: Record<MoodWeatherId, { label: string; description: string }> =
   },
   soft_cloudy: {
     label: 'Soft clouds',
-    description: 'Neutral cozy — the default hum between you two.',
+    description: 'Neutral cozy — the default hum in the room.',
   },
   streak_warmth: {
     label: 'Streak warmth',

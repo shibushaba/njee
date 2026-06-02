@@ -6,11 +6,11 @@ export function normalizeMessageRow(row: unknown): MessageRow {
   const r = row as Record<string, unknown>
   const mt = r.message_type as MessageRow['message_type'] | undefined
   const safeType: MessageRow['message_type'] =
-    mt === 'text' || mt === 'image' || mt === 'video' ? mt : 'text'
+    mt === 'text' || mt === 'image' || mt === 'video' || mt === 'voice' ? mt : 'text'
 
   const rmt = r.reply_message_type as string | null | undefined
   const safeReplyType: MessageRow['message_type'] | null =
-    rmt === 'text' || rmt === 'image' || rmt === 'video' ? rmt : null
+    rmt === 'text' || rmt === 'image' || rmt === 'video' || rmt === 'voice' ? rmt : null
 
   return {
     id: String(r.id),
@@ -30,6 +30,9 @@ export function normalizeMessageRow(row: unknown): MessageRow {
     reply_snippet: r.reply_snippet != null ? String(r.reply_snippet) : null,
     reply_message_type: safeReplyType,
     reply_sender_id: r.reply_sender_id != null ? String(r.reply_sender_id) : null,
+    media_surface:
+      r.media_surface === 'chat' || r.media_surface === 'memories' ? r.media_surface : null,
+    media_expires_at: r.media_expires_at != null ? String(r.media_expires_at) : null,
   }
 }
 
@@ -104,6 +107,8 @@ export async function sendMediaMessage(
     mediaType: ChatMediaKind
     caption: string
     viewLimit?: number | null
+    mediaExpiresAt?: string | null
+    mediaSurface?: 'chat' | 'memories'
     isLocked?: boolean
     reply?: ReplyInsertMeta | null
   },
@@ -121,6 +126,8 @@ export async function sendMediaMessage(
       media_type: params.mediaType,
       seen: false,
       view_limit: params.viewLimit ?? null,
+      media_expires_at: params.mediaExpiresAt ?? null,
+      media_surface: params.mediaSurface ?? null,
       current_views: 0,
       is_locked: params.isLocked ?? false,
       reply_to_message_id: reply?.replyToMessageId ?? null,

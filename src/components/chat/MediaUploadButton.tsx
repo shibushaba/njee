@@ -18,7 +18,7 @@ export function MediaUploadButton({ disabled, onPick, className }: MediaUploadBu
         ref={inputRef}
         id={inputId}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"
+        accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/mp4,audio/webm,audio/ogg,audio/wav,audio/aac"
         className="sr-only"
         disabled={disabled}
         onChange={(e) => {
@@ -35,7 +35,7 @@ export function MediaUploadButton({ disabled, onPick, className }: MediaUploadBu
           'flex size-10 items-center justify-center border-[2px] border-nje-border bg-nje-bg text-nje-border shadow-[0_2px_0_0_rgba(90,46,30,0.05)] transition-[transform,box-shadow] duration-150',
           'hover:shadow-[0_3px_0_0_rgba(90,46,30,0.07)] disabled:cursor-not-allowed disabled:opacity-45 motion-safe:active:translate-y-px',
         )}
-        aria-label="Add photo or video"
+        aria-label="Add photo, video, or voice"
       >
         <ImagePlus className="size-[1.1rem]" strokeWidth={2.25} aria-hidden />
       </button>

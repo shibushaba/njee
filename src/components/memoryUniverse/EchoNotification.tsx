@@ -21,7 +21,7 @@ export function EchoNotification({ hint, className }: EchoNotificationProps) {
       </span>
       <div className="min-w-0">
         <p className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-nje-muted">Soft echo</p>
-        <p className="mt-0.5 text-sm font-semibold leading-snug text-nje-border">Something from your shared quiet is surfacing.</p>
+        <p className="mt-0.5 text-sm font-semibold leading-snug text-nje-border">Something from the quiet is surfacing.</p>
         {hint ? <p className="mt-1 text-xs leading-relaxed text-nje-muted">{hint}</p> : null}
       </div>
     </div>

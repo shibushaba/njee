@@ -26,7 +26,7 @@ export function MemoryUniversePage() {
     <div className="flex min-h-0 flex-1 flex-col gap-stack-lg pb-stack-lg">
       <PageHeader
         title="Memory universe"
-        description="Echoes resurface what mattered; the constellation maps it as a quiet sky between you two — calm, intimate, never noisy."
+        description="Echoes resurface what mattered; the constellation maps it as a quiet sky — calm, intimate, never noisy."
       />
 
       {mood ? (

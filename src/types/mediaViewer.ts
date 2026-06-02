@@ -1,10 +1,11 @@
 export type FullscreenMediaPayload = {
-  kind: 'image' | 'video'
+  kind: 'image' | 'video' | 'voice'
   url: string
   messageId: string
   caption?: string
-  /** Google file id when `media_url` is `gdrive:<id>` (used to free Drive quota after last view). */
+  /** Legacy Google Drive file id — purge via Drive API when locked. */
   driveFileId?: string | null
-  /** Drive preview URL for link-shared videos (no Google login required to play). */
   driveVideoEmbedUrl?: string | null
+  /** Supabase Storage path (same as message.media_url when not gdrive:). */
+  storagePath?: string | null
 }
