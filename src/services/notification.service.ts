@@ -68,7 +68,7 @@ export const defaultNotificationPreferences = (): Omit<
   notify_presence: false,
   notify_pinned_moment: true,
   notify_watch_shelf: true,
-  browser_push: false,
+  browser_push: true,
 })
 
 export async function fetchNotifications(userId: string, limit = 80) {
@@ -208,7 +208,11 @@ export function subscribeNotifications(
         onChange(normalizeNotification(raw), ev)
       },
     )
-    .subscribe()
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR') {
+        console.warn('[nje] notifications realtime channel error')
+      }
+    })
 
   return () => {
     void supabase.removeChannel(channel)

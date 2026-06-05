@@ -61,7 +61,7 @@ function ToggleRow({ label, description, checked, disabled, onChange }: ToggleRo
 export function NotificationSettings() {
   const { user } = useAuth()
   const userId = user?.id ?? null
-  const { prefs, loadingPrefs, updatePreferences } = useNotificationHub()
+  const { prefs, loadingPrefs, updatePreferences, testNotificationDelivery } = useNotificationHub()
   const [busy, setBusy] = useState(false)
   const [browserMsg, setBrowserMsg] = useState<string | null>(null)
   const [webBusy, setWebBusy] = useState(false)
@@ -172,7 +172,8 @@ export function NotificationSettings() {
       <NjeCard tone="surface" padding="lg" className="shadow-[var(--shadow-nje-flat-sm)]">
         <p className="text-[0.58rem] font-bold uppercase tracking-[0.2em] text-nje-whisper">In the app</p>
         <p className="mt-1 text-xs leading-relaxed text-nje-muted">
-          Turn categories off anytime. Nothing here is designed to pull you back constantly.
+          Warm toasts appear at the top while nje is open. Turn categories off anytime — nothing here is designed to
+          pull you back constantly.
         </p>
         <div className="mt-2">
           <ToggleRow
@@ -232,12 +233,20 @@ export function NotificationSettings() {
             onChange={(v) => void patch({ notify_presence: v })}
           />
         </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => testNotificationDelivery()}
+          className="mt-stack-md border-[2px] border-nje-border bg-nje-yellow px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-nje-border shadow-[0_2px_0_0_rgba(90,46,30,0.06)]"
+        >
+          Send test toast
+        </button>
       </NjeCard>
 
       <NjeCard tone="yellow" padding="lg" className="shadow-[var(--shadow-nje-flat-sm)]">
         <p className="text-[0.58rem] font-bold uppercase tracking-[0.2em] text-nje-whisper">Outside the app</p>
         <p className="mt-1 text-xs leading-relaxed text-nje-muted">
-          When nje is open in another tab, soft silent alerts can still reach you.
+          When nje is in another tab or minimized, system alerts can reach you if the browser allows notifications.
         </p>
         <div className="mt-stack-md flex flex-col gap-2 sm:flex-row sm:items-center">
           <button

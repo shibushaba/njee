@@ -11,13 +11,63 @@ import {
   subscribeNotifications,
   upsertNotificationPreferences,
 } from '../services/notification.service'
-import { showQuietBrowserNotification } from '../utils/browserNotifications'
+import { getNotificationPermission, showNjeBrowserNotification } from '../utils/browserNotifications'
+import {
+  notificationUrlForKind,
+  shouldDeliverInAppToast,
+  shouldDeliverOsNotification,
+} from '../utils/notificationDelivery'
 import { kindAllowsBrowserPush } from '../utils/notificationDisplay'
 import type { NotificationPreferencesPatch, NotificationPreferencesRow, NotificationRow } from '../types/notification'
 
 export type UseNotificationsOptions = {
   /** When false, skip inbox fetch + realtime (e.g. settings page only needs prefs). */
   inbox?: boolean
+  /** Foreground delivery — in-app toast. */
+  onNewNotification?: (row: NotificationRow) => void
+}
+
+function effectivePrefsFromRef(
+  prefs: NotificationPreferencesRow | null,
+): Omit<NotificationPreferencesRow, 'user_id' | 'updated_at'> {
+  if (!prefs) return defaultNotificationPreferences()
+  return {
+    notify_message: prefs.notify_message,
+    notify_media: prefs.notify_media,
+    notify_streak: prefs.notify_streak,
+    notify_time_capsule: prefs.notify_time_capsule,
+    notify_shared_collection: prefs.notify_shared_collection,
+    notify_presence: prefs.notify_presence,
+    notify_pinned_moment: prefs.notify_pinned_moment,
+    notify_watch_shelf: prefs.notify_watch_shelf,
+    browser_push: prefs.browser_push,
+  }
+}
+
+function deliverNotification(
+  row: NotificationRow,
+  prefs: NotificationPreferencesRow | null,
+  onNewNotification: ((row: NotificationRow) => void) | undefined,
+) {
+  const p = effectivePrefsFromRef(prefs)
+  if (!kindAllowsBrowserPush(row.kind, p)) return
+
+  const visibility = typeof document !== 'undefined' ? document.visibilityState : 'visible'
+  const permission = getNotificationPermission()
+
+  if (shouldDeliverInAppToast(visibility)) {
+    onNewNotification?.(row)
+    return
+  }
+
+  if (shouldDeliverOsNotification(visibility, permission)) {
+    showNjeBrowserNotification({
+      id: row.id,
+      title: row.title,
+      body: row.body,
+      kind: row.kind,
+    })
+  }
 }
 
 export function useNotifications(options?: UseNotificationsOptions) {
@@ -31,6 +81,8 @@ export function useNotifications(options?: UseNotificationsOptions) {
   const [prefs, setPrefs] = useState<NotificationPreferencesRow | null>(null)
   const [loadingPrefs, setLoadingPrefs] = useState(false)
   const prefsRef = useRef<NotificationPreferencesRow | null>(null)
+  const onNewNotificationRef = useRef(options?.onNewNotification)
+  onNewNotificationRef.current = options?.onNewNotification
 
   useEffect(() => {
     prefsRef.current = prefs
@@ -66,7 +118,13 @@ export function useNotifications(options?: UseNotificationsOptions) {
       data = up.data
       error = up.error
     }
-    if (!error && data) setPrefs(data)
+    if (!error && data) {
+      setPrefs(data)
+      if (getNotificationPermission() === 'granted' && !data.browser_push) {
+        const sync = await upsertNotificationPreferences(userId, { browser_push: true })
+        if (sync.data) setPrefs(sync.data)
+      }
+    }
     setLoadingPrefs(false)
   }, [userId])
 
@@ -93,15 +151,8 @@ export function useNotifications(options?: UseNotificationsOptions) {
         })
         void refreshUnread()
 
-        const p = prefsRef.current
-        if (
-          event === 'INSERT' &&
-          p?.browser_push &&
-          typeof document !== 'undefined' &&
-          document.visibilityState === 'hidden' &&
-          kindAllowsBrowserPush(row.kind, p)
-        ) {
-          showQuietBrowserNotification(row.title, { body: row.body.slice(0, 140), tag: `nje-${row.id}` })
+        if (event === 'INSERT') {
+          deliverNotification(row, prefsRef.current, onNewNotificationRef.current)
         }
       },
       (id) => {
@@ -155,18 +206,7 @@ export function useNotifications(options?: UseNotificationsOptions) {
   )
 
   const effectivePrefs = useMemo((): Omit<NotificationPreferencesRow, 'user_id' | 'updated_at'> => {
-    if (!prefs) return defaultNotificationPreferences()
-    return {
-      notify_message: prefs.notify_message,
-      notify_media: prefs.notify_media,
-      notify_streak: prefs.notify_streak,
-      notify_time_capsule: prefs.notify_time_capsule,
-      notify_shared_collection: prefs.notify_shared_collection,
-      notify_presence: prefs.notify_presence,
-      notify_pinned_moment: prefs.notify_pinned_moment,
-      notify_watch_shelf: prefs.notify_watch_shelf,
-      browser_push: prefs.browser_push,
-    }
+    return effectivePrefsFromRef(prefs)
   }, [prefs])
 
   return {
@@ -183,5 +223,22 @@ export function useNotifications(options?: UseNotificationsOptions) {
     markAllRead,
     updatePreferences,
     ensurePreferences: ensurePrefs,
+    notificationUrlForKind,
+    /** Local smoke test for toast + OS notification delivery. */
+    testNotificationDelivery: (onNewNotification?: (row: NotificationRow) => void) => {
+      const row: NotificationRow = {
+        id: `test-${Date.now()}`,
+        user_id: userId ?? '',
+        kind: 'message',
+        title: 'Test ping',
+        body: 'If you see this, gentle notifications are working.',
+        actor_id: null,
+        ref_message_id: null,
+        meta: {},
+        read_at: null,
+        created_at: new Date().toISOString(),
+      }
+      deliverNotification(row, prefsRef.current, onNewNotification)
+    },
   }
 }
