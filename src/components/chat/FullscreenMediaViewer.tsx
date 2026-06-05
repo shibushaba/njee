@@ -98,14 +98,14 @@ export function FullscreenMediaViewer({
           current_views: applied.current_views,
           is_locked: applied.is_locked,
         }
-        if (applied.exhausted && mediaRef) {
+        if ((applied.exhausted || r.locked) && mediaRef) {
           pendingPurgeRef.current = { messageId: mid, mediaRef }
         }
         onMediaViewRecordedRef.current?.(mid, patch)
         if (r.unlimited) {
           onRecordMediaViewFailureRef.current?.()
         }
-        if (applied.exhausted && mediaRef) {
+        if ((applied.exhausted || r.locked) && mediaRef) {
           void purgeLockedMediaAfterLock(mediaRef, mid).then((purged) => {
             if (purged.cleared) {
               onMediaViewRecordedRef.current?.(mid, {

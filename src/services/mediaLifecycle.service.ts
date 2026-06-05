@@ -2,6 +2,7 @@ import { purgeLockedMediaAfterLock } from './media.service'
 import type { MessageRow } from '../types/message'
 import { isMediaPastExpiry } from '../utils/mediaExpiry'
 import { isGdriveMediaRef } from '../utils/gdriveMediaUrl'
+import { isLimitedMediaExhausted, mediaHasViewLimit } from '../utils/limitedMediaViews'
 
 function isPurgeableMedia(m: MessageRow): boolean {
   if (m.deleted_at) return false
@@ -13,7 +14,8 @@ function isPurgeableMedia(m: MessageRow): boolean {
 export function shouldPurgeMediaRow(m: MessageRow): boolean {
   if (!isPurgeableMedia(m)) return false
   if (isMediaPastExpiry(m)) return true
-  if (m.is_locked && m.view_limit != null && m.view_limit > 0) return true
+  if (isLimitedMediaExhausted(m)) return true
+  if (m.is_locked && mediaHasViewLimit(m)) return true
   return false
 }
 

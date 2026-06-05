@@ -183,7 +183,12 @@ export async function purgeDriveMemoryAfterLock(
   return { cleared: rpcBool(row.ok) }
 }
 
-/** Delete Storage object (or legacy Drive file) after the single view, then clear DB path. */
+function storageObjectMissingError(message: string): boolean {
+  const s = message.toLowerCase()
+  return s.includes('not found') || s.includes('object not found') || s.includes('does not exist')
+}
+
+/** Delete Storage object (or legacy Drive file) after rules expire, then clear DB path. */
 export async function purgeLockedMediaAfterLock(
   mediaUrl: string,
   messageId: string,
@@ -195,7 +200,7 @@ export async function purgeLockedMediaAfterLock(
   }
 
   const { error: rmErr } = await supabase.storage.from(MEDIA_BUCKET).remove([mediaUrl])
-  if (rmErr) {
+  if (rmErr && !storageObjectMissingError(rmErr.message)) {
     return { cleared: false, error: rmErr.message }
   }
 

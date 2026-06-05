@@ -16,7 +16,7 @@ import {
   softDeleteMessage,
 } from '../services/message.service'
 import { classifyMediaFile, uploadChatMedia } from '../services/media.service'
-import { sweepMediaLifecycle } from '../services/mediaLifecycle.service'
+import { shouldPurgeMediaRow, sweepMediaLifecycle } from '../services/mediaLifecycle.service'
 import { driveAddAnyoneReaderPermission, driveUploadMultipart } from '../services/googleDrive/driveApi'
 import type { MessageRow } from '../types/message'
 import type { PresenceStatusId } from '../types/presenceStatus'
@@ -255,6 +255,9 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
             (row.sender_id === peerId && row.receiver_id === currentId)
           if (!inThread) return
           setMessages((prev) => prev.map((m) => (m.id === row.id ? row : m)))
+          if (shouldPurgeMediaRow(row)) {
+            void sweepMediaLifecycle([row], patchMessage, purgeAttemptedRef.current)
+          }
         },
       )
       .subscribe(async (status) => {
@@ -477,7 +480,7 @@ function ChatRoomProviderInner({ children }: ChatRoomProviderProps) {
     if (!peerId) return
     const tick = window.setInterval(() => {
       void sweepMediaLifecycle(messages, patchMessage, purgeAttemptedRef.current)
-    }, 60_000)
+    }, 30_000)
     const onVis = () => {
       if (document.visibilityState === 'visible') {
         void sweepMediaLifecycle(messages, patchMessage, purgeAttemptedRef.current)
